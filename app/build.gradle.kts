@@ -8,7 +8,9 @@ android {
 
     defaultConfig {
         applicationId = "com.minigame.androiddemo"
-        minSdk = 21
+        // Raised 21 -> 26: the migo runtime AAR pins minSdk 26 (Skia/NDK
+        // Oreo baseline). Manifest merge fails below this.
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
