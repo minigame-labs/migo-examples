@@ -70,7 +70,11 @@ fi
 ASSET="migo-runtime-${TAG}-full-${ABI}.aar"
 BASE="https://github.com/$REPO/releases/download/$TAG"
 
-TMP="$(mktemp -d)"
+# The temp dir must live next to DEST, not in the system default (/tmp): if
+# they are different filesystems, the final `mv` below degrades from an
+# atomic rename into copy-then-unlink, reintroducing the partial-file window
+# that the checksum check below exists to prevent.
+TMP="$(mktemp -d "$(dirname "$DEST")/.migo-resolve.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
 if ! curl -fsSL "$BASE/$ASSET" -o "$TMP/artifact.aar"; then
