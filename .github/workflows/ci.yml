@@ -1,0 +1,63 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Resolver contract
+        run: bash scripts/test-resolve-migo-artifact.sh
+
+      - name: Release asset selection contract
+        run: bash scripts/test-select-release-asset.sh
+
+      - name: Attestation verification contract
+        run: bash scripts/test-verify-attestation.sh
+
+      - name: Content namespace contract
+        run: bash scripts/test-content-namespace.sh
+
+      - name: Resolve runtime
+        id: resolve
+        run: |
+          set +e
+          bash scripts/resolve-migo-artifact.sh android-aar android-java/libs/migo.aar
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+
+      # The resolver has one exit code (4) reserved specifically for "the
+      # release or its asset is not available" -- see resolve-migo-artifact.sh,
+      # where every default-mode failure past the version-file stage (missing
+      # release, missing asset, failed download, missing attestation file) exits
+      # 4. That is distinct from a broken resolver (a bad version-pin file: exit
+      # 3, or a real integrity failure once bytes are in hand: exit 5), so exit 4
+      # is the one and only condition this job treats as "skip, don't fail".
+      # No migo runtime release has been published yet, so today that is exactly
+      # what happens. The moment a release exists, resolution starts succeeding
+      # (exit 0) and the Android build step below begins running with no change
+      # to this workflow.
+      - name: Build Android example
+        if: steps.resolve.outputs.status == '0'
+        working-directory: android-java
+        run: ./gradlew :app:assembleDebug :snippets:assembleDebug
+
+      - name: Skip reason (no runtime release published)
+        if: steps.resolve.outputs.status == '4'
+        run: |
+          echo "::notice::Android build skipped: resolve-migo-artifact.sh exited 4 (no migo runtime release is published yet). This is expected until the first release exists; see resolve-migo-artifact.sh for what exit 4 means."
+
+      - name: Fail on resolver regression
+        if: steps.resolve.outputs.status != '0' && steps.resolve.outputs.status != '4'
+        run: |
+          echo "::error::resolve-migo-artifact.sh exited ${{ steps.resolve.outputs.status }}, which is neither success (0) nor the documented no-release-available case (4). Treating this as a real resolver regression, not a skip."
+          exit 1
