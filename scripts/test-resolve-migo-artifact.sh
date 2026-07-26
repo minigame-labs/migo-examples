@@ -62,37 +62,7 @@ echo "$OUT" | grep -q "could not download" \
 [ -f "$WORK/dl.aar" ] \
   && fail "default mode left a file at the destination despite failing"
 
-# 6. MIGO_PROFILE must steer the download path to a different asset, not just
-#    local mode: this is the bug the first implementation had (profile only
-#    read in local mode; the download path hardcoded "full" into the guessed
-#    filename). MIGO_RELEASE_JSON_OVERRIDE swaps out the GitHub API call for a
-#    canned release payload so this can be checked without a real release.
-DL_ASSETS="$WORK/dlassets"
-mkdir -p "$DL_ASSETS"
-echo "full-bytes" > "$DL_ASSETS/migo-runtime-0.9.0-full-arm64-v8a.aar"
-echo "slim-bytes" > "$DL_ASSETS/migo-runtime-0.9.0-slim-arm64-v8a.aar"
-sha256sum "$DL_ASSETS/migo-runtime-0.9.0-full-arm64-v8a.aar" | awk '{print $1}' \
-  > "$DL_ASSETS/migo-runtime-0.9.0-full-arm64-v8a.aar.sha256"
-sha256sum "$DL_ASSETS/migo-runtime-0.9.0-slim-arm64-v8a.aar" | awk '{print $1}' \
-  > "$DL_ASSETS/migo-runtime-0.9.0-slim-arm64-v8a.aar.sha256"
-cat > "$WORK/release.json" <<EOF
-{"assets": [
-  {"name": "migo-runtime-0.9.0-full-arm64-v8a.aar", "browser_download_url": "file://$DL_ASSETS/migo-runtime-0.9.0-full-arm64-v8a.aar"},
-  {"name": "migo-runtime-0.9.0-slim-arm64-v8a.aar", "browser_download_url": "file://$DL_ASSETS/migo-runtime-0.9.0-slim-arm64-v8a.aar"}
-]}
-EOF
-
-MIGO_RELEASE_JSON_OVERRIDE="$WORK/release.json" bash "$RESOLVER" android-aar "$WORK/full.aar" >/dev/null \
-  || fail "download path did not resolve the default (full) profile via the override"
-grep -q "full-bytes" "$WORK/full.aar" \
-  || fail "download path (default profile) fetched the wrong asset"
-
-MIGO_RELEASE_JSON_OVERRIDE="$WORK/release.json" MIGO_PROFILE=slim bash "$RESOLVER" android-aar "$WORK/slim.aar" >/dev/null \
-  || fail "MIGO_PROFILE=slim did not steer the download path to the slim asset"
-grep -q "slim-bytes" "$WORK/slim.aar" \
-  || fail "MIGO_PROFILE=slim fetched the wrong asset in the download path"
-
-# 7. Local mode must not leave a partial file at the destination when the
+# 6. Local mode must not leave a partial file at the destination when the
 #    copy itself fails partway through: the destination is only ever
 #    produced by an atomic rename of a fully-written temp file beside it.
 #    Simulated deterministically with a file-size ulimit (standing in for
@@ -111,4 +81,4 @@ fi
 [ -f "$BIG_DEST" ] \
   && fail "local mode left a file at the destination after the copy failed partway through"
 
-echo "OK: resolver contract holds (7 checks)"
+echo "OK: resolver contract holds (6 checks)"

@@ -84,28 +84,22 @@ if [ -n "${GITHUB_TOKEN:-}" ]; then
 fi
 
 RELEASE_JSON="$TMP/release.json"
-if [ -n "${MIGO_RELEASE_JSON_OVERRIDE:-}" ]; then
-  # Test-only escape hatch: skip the GitHub API call and use a canned release
-  # payload instead, so asset discovery and the download path can be
-  # exercised without a network dependency or a real migo release.
-  cp "$MIGO_RELEASE_JSON_OVERRIDE" "$RELEASE_JSON"
-else
-  RELEASE_API="https://api.github.com/repos/$REPO/releases/tags/$TAG"
-  if ! curl -fsSL "${AUTH_HEADER[@]}" "$RELEASE_API" -o "$RELEASE_JSON"; then
-    echo "ERROR: could not download the release metadata for tag '$TAG' of $REPO" >&2
-    echo "       (GET $RELEASE_API)." >&2
-    echo "       The tag comes from migo-version.txt; check that the release exists." >&2
-    echo "       To build against a local migo checkout instead, set" >&2
-    echo "       MIGO_LOCAL_REPO=/path/to/migo" >&2
-    exit 4
-  fi
+RELEASE_API="https://api.github.com/repos/$REPO/releases/tags/$TAG"
+if ! curl -fsSL "${AUTH_HEADER[@]}" "$RELEASE_API" -o "$RELEASE_JSON"; then
+  echo "ERROR: could not download the release metadata for tag '$TAG' of $REPO" >&2
+  echo "       (GET $RELEASE_API)." >&2
+  echo "       The tag comes from migo-version.txt; check that the release exists." >&2
+  echo "       To build against a local migo checkout instead, set" >&2
+  echo "       MIGO_LOCAL_REPO=/path/to/migo" >&2
+  exit 4
 fi
 
 # Discover the asset instead of guessing its filename by concatenation: the
 # version segment embedded in a release asset name is a product version,
 # which need not equal the git tag used to fetch it (a tag of v0.9.0 can
-# publish assets named ...-0.9.0-...). Selecting on delimiter-bounded
-# segments also means we never pick arbitrarily between ambiguous matches.
+# publish assets named ...-0.9.0-...). The selector pins profile/abi to the
+# filename's trailing "-"-delimited segments, so it never picks arbitrarily
+# between ambiguous matches.
 if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PROFILE" "$ABI" < "$RELEASE_JSON")"; then
   echo "ERROR: could not select a release asset from '$TAG' of $REPO for profile '$PROFILE' abi '$ABI'." >&2
   exit 4
