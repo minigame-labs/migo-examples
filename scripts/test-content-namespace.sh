@@ -64,6 +64,16 @@ for source_path in candidates:
     scanned += 1
     source = source_path.read_text(encoding="utf-8")
     for name in forbidden:
+        # Deliberate limit, not an oversight: this matches only the literal
+        # `wx.<name>` form. It does not detect bracket notation
+        # (wx["getGamepads"]()), aliasing through another binding
+        # (const w = wx; w.getGamepads()), or whitespace/newlines between the
+        # object and the property (wx .getGamepads() / wx\n.getGamepads()).
+        # Statically closing those is undecidable in general, and this gate is
+        # a byte-faithful port of the engine repo's own gate, which draws the
+        # same boundary on purpose. Its job is to catch the mistake as it is
+        # actually written in hand-authored demo content -- the literal form
+        # -- not to prove the absence of every possible evasion.
         if re.search(r"\bwx\." + re.escape(name) + r"\b", source):
             errors.append(
                 f"{source_path.relative_to(scan_root.parent)} calls wx.{name}, but {name} is "
