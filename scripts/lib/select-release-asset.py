@@ -3,13 +3,16 @@
 
 Reads a "get a release by tag" JSON response (as returned by
 https://api.github.com/repos/<repo>/releases/tags/<tag>) from stdin, and
-prints the `browser_download_url` of the single `.aar` asset whose name
-contains both PROFILE and ABI as delimiter-bounded segments, e.g. "full" and
-"arm64-v8a" in "migo-runtime-0.9.0-full-arm64-v8a.aar".
+prints the `browser_download_url` of the single `.aar` asset whose filename
+ends, structurally, in <profile>-<abi's own "-"-separated segments>, e.g.
+"full-arm64-v8a" in "migo-runtime-0.9.0-full-arm64-v8a.aar".
 
 This exists so resolve-migo-artifact.sh never has to guess an asset filename
 by string concatenation: the version segment embedded in a release asset name
-is a product version, which need not equal the git tag used to fetch it.
+is a product version, which need not equal the git tag used to fetch it. Only
+the trailing profile/abi segments are pinned; everything before them (product
+name, version) is deliberately unconstrained -- that's the point of
+discovering the asset instead of guessing its whole name.
 
 Exit codes:
   0  exactly one match; its download URL is on stdout
@@ -17,21 +20,35 @@ Exit codes:
   2  usage error
 """
 import json
-import re
 import sys
 
 
-def has_segment(name, needle):
-    """True if `needle` occurs in `name` bounded by non-alnum chars or ends.
+def matches_profile_and_abi(name, profile, abi):
+    """True if `name` (an asset filename) structurally ends in profile-abi.
 
-    A plain substring check would let profile "full" match an asset named
-    "...fullsize...". Splitting the name on a fixed delimiter such as "-"
-    would break an ABI like "arm64-v8a", which itself contains a hyphen, into
-    two tokens. Bounding the substring itself (rather than pre-splitting)
-    avoids both failure modes.
+    Strips the ".aar" suffix and splits the rest on "-". The ABI's own
+    segments (ABI may itself contain "-", e.g. "arm64-v8a" -> ["arm64",
+    "v8a"]) must be exactly the *final* segments of the name, and PROFILE
+    must be the single segment immediately before them.
+
+    This is deliberately a structural check, not a substring search: a name
+    like "...-full-arm64-v8a-debug.aar" contains "arm64-v8a" as a
+    delimiter-bounded substring, but its actual trailing segments are
+    ["v8a", "debug"] -- not ["arm64", "v8a"] -- so it correctly does not
+    match. A substring check would have matched it silently and picked the
+    wrong artifact.
     """
-    pattern = r"(?:^|[^A-Za-z0-9])" + re.escape(needle) + r"(?:[^A-Za-z0-9]|$)"
-    return re.search(pattern, name) is not None
+    if not name.endswith(".aar"):
+        return False
+    stem = name[: -len(".aar")]
+    segments = stem.split("-")
+    abi_segments = abi.split("-")
+
+    if len(segments) < len(abi_segments) + 1:
+        return False
+    if segments[-len(abi_segments):] != abi_segments:
+        return False
+    return segments[-len(abi_segments) - 1] == profile
 
 
 def select(release, profile, abi):
@@ -39,11 +56,7 @@ def select(release, profile, abi):
     assets = release.get("assets", []) or []
     all_names = [a.get("name", "") for a in assets]
     matches = [
-        a
-        for a in assets
-        if a.get("name", "").endswith(".aar")
-        and has_segment(a.get("name", ""), profile)
-        and has_segment(a.get("name", ""), abi)
+        a for a in assets if matches_profile_and_abi(a.get("name", ""), profile, abi)
     ]
     return matches, all_names
 
