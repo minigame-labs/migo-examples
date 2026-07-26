@@ -42,5 +42,5 @@ Thumbs.db
 .externalNativeBuild/
 .cxx/
 
-# App libs (keep the directory, ignore AAR files)
-app/libs/*.aar
+# Resolved migo runtime (fetched by scripts/resolve-migo-artifact.sh)
+libs/*.aar

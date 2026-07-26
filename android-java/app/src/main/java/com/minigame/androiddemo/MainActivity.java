@@ -29,8 +29,7 @@ public class MainActivity extends Activity {
     private static final String TAG = "MigoDemo";
 
     // Game configuration
-    private static final String GAME_ID = "hxddd";
-//    private static final String GAME_ID = "migo-test-suit";
+    private static final String GAME_ID = "demo";
     private static final String GAME_ENTRY = "game.js";
 
     // Auth relay URL used by demo AuthHandler proxy.

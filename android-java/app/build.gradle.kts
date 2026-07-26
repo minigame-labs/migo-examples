@@ -32,5 +32,5 @@ android {
 }
 
 dependencies {
-    implementation(files("../../migo/platforms/android/dist/migo-debug.aar"))
+    implementation(files("../libs/migo.aar"))
 }
