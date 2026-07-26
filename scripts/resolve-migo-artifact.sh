@@ -8,7 +8,7 @@
 #   MIGO_LOCAL_REPO  use the artifact built inside that migo checkout instead
 #
 # MIGO_ABI selects the Android ABI (default arm64-v8a).
-# MIGO_PROFILE selects the product profile in local mode (default full).
+# MIGO_PROFILE selects the product profile (default full), in both modes.
 set -euo pipefail
 
 PLATFORM="${1:?usage: resolve-migo-artifact.sh <platform> <dest>}"
@@ -16,6 +16,7 @@ DEST="${2:?usage: resolve-migo-artifact.sh <platform> <dest>}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ABI="${MIGO_ABI:-arm64-v8a}"
+PROFILE="${MIGO_PROFILE:-full}"
 REPO="minigame-labs/migo"
 
 case "$PLATFORM" in
@@ -33,7 +34,6 @@ if [ -n "${MIGO_LOCAL_REPO:-}" ]; then
   # provenance chain, which a plain checkout cannot satisfy.
   # build-aar.sh names its output migo-<product-profile>-<build-type>.aar, so the
   # profile is part of the filename and cannot be assumed away.
-  PROFILE="${MIGO_PROFILE:-full}"
   SRC="$MIGO_LOCAL_REPO/platforms/android/dist/migo-${PROFILE}-debug.aar"
   if [ ! -f "$SRC" ]; then
     echo "ERROR: no locally built AAR at $SRC" >&2
@@ -67,7 +67,7 @@ if [ -z "$TAG" ]; then
   exit 3
 fi
 
-ASSET="migo-runtime-${TAG}-full-${ABI}.aar"
+ASSET="migo-runtime-${TAG}-${PROFILE}-${ABI}.aar"
 BASE="https://github.com/$REPO/releases/download/$TAG"
 
 # The temp dir must live next to DEST, not in the system default (/tmp): if
