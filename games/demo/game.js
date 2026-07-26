@@ -20,10 +20,17 @@ wx.onTouchStart(function (e) {
   background = TOUCHED;
 });
 
-wx.onTouchEnd(function () {
+function onTouchEnd() {
   touches = 0;
   background = IDLE;
-});
+}
+
+wx.onTouchEnd(onTouchEnd);
+// A cancelled gesture (finger leaves the surface, a system gesture takes
+// over) never fires onTouchEnd. Without this, a cancel would leave the
+// background stuck green -- a false pass for a probe whose only job is to
+// show that input reached JS right now.
+wx.onTouchCancel(onTouchEnd);
 
 function paint() {
   frames += 1;
