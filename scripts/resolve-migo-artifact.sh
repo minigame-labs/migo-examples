@@ -8,7 +8,6 @@
 #                    against the checksum published beside it
 #   MIGO_LOCAL_REPO  use the artifact built inside that migo checkout instead
 #
-# MIGO_ABI selects the Android ABI (default arm64-v8a).
 # MIGO_PROFILE selects the product profile (default full), in both modes.
 # GITHUB_TOKEN, if set, is sent as a bearer token on GitHub API/download
 # requests (needed for private repos or to dodge unauthenticated rate
@@ -19,7 +18,6 @@ PLATFORM="${1:?usage: resolve-migo-artifact.sh <platform> <dest>}"
 DEST="${2:?usage: resolve-migo-artifact.sh <platform> <dest>}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ABI="${MIGO_ABI:-arm64-v8a}"
 PROFILE="${MIGO_PROFILE:-full}"
 REPO="minigame-labs/migo"
 
@@ -44,7 +42,7 @@ if [ -n "${MIGO_LOCAL_REPO:-}" ]; then
     echo "       AARs present in that directory:" >&2
     ls "$MIGO_LOCAL_REPO/platforms/android/dist"/*.aar 2>/dev/null | sed 's|^|         |' >&2 \
       || echo "         (none)" >&2
-    echo "       build it with: bash scripts/build-aar.sh debug $ABI --product-profile $PROFILE" >&2
+    echo "       build it with: bash scripts/build-aar.sh debug --product-profile $PROFILE" >&2
     exit 3
   fi
   # Land the file atomically: copy to a temp file beside the destination, then
@@ -94,14 +92,15 @@ if ! curl -fsSL "${AUTH_HEADER[@]}" "$RELEASE_API" -o "$RELEASE_JSON"; then
   exit 4
 fi
 
-# Discover the asset instead of guessing its filename by concatenation: the
-# version segment embedded in a release asset name is a product version,
-# which need not equal the git tag used to fetch it (a tag of v0.9.0 can
-# publish assets named ...-0.9.0-...). The selector pins profile/abi to the
-# filename's trailing "-"-delimited segments, so it never picks arbitrarily
-# between ambiguous matches.
-if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PROFILE" "$ABI" < "$RELEASE_JSON")"; then
-  echo "ERROR: could not select a release asset from '$TAG' of $REPO for profile '$PROFILE' abi '$ABI'." >&2
+# Discover the asset instead of guessing its filename by concatenation:
+# build-aar.sh names its output migo-<profile>-<build-type>.aar, and the
+# release workflow always builds with build-type "release" (see
+# release.yml). Discovery only pins that trailing profile/build-type tail;
+# everything in front of it (product name, version) stays unconstrained.
+# Each AAR is multi-ABI (Gradle picks the right .so per device at build
+# time), so there is no ABI segment to match on at all.
+if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PROFILE" < "$RELEASE_JSON")"; then
+  echo "ERROR: could not select a release asset from '$TAG' of $REPO for profile '$PROFILE'." >&2
   exit 4
 fi
 ASSET="$(basename "$ASSET_URL")"
