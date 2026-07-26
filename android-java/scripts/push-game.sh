@@ -29,8 +29,12 @@ fi
 "${ADB[@]}" shell "run-as $PKG sh -c 'cp -r $STAGE/. files/migo/games/$GAME_ID/code/'"
 "${ADB[@]}" shell "rm -rf $STAGE"
 
-# Verify rather than assume: a silent run-as failure would otherwise look like success.
-if ! "${ADB[@]}" shell "run-as $PKG ls files/migo/games/$GAME_ID/code/game.js" | grep -q game.js; then
+# Verify rather than assume: a silent run-as failure would otherwise look like
+# success. The sentinel is matched whole-line because `ls`-style errors quote the
+# path back at you -- a substring match on the filename would be satisfied by the
+# very error that means the file is missing.
+if ! "${ADB[@]}" shell "run-as $PKG test -f files/migo/games/$GAME_ID/code/game.js && echo MIGO_PUSH_OK" \
+     | tr -d '\r' | grep -qx MIGO_PUSH_OK; then
   echo "ERROR: game.js is not present in the app's private storage after deploy" >&2
   exit 3
 fi
