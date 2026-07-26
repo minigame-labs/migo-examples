@@ -3,12 +3,16 @@
 #
 # Obtains a migo runtime artifact for one platform.
 #
-#   default          download the release named by migo-version.txt, then
-#                    verify its sha256 against the checksum published beside it
+#   default          discover the matching asset on the release named by
+#                    migo-version.txt, download it, then verify its sha256
+#                    against the checksum published beside it
 #   MIGO_LOCAL_REPO  use the artifact built inside that migo checkout instead
 #
 # MIGO_ABI selects the Android ABI (default arm64-v8a).
 # MIGO_PROFILE selects the product profile (default full), in both modes.
+# GITHUB_TOKEN, if set, is sent as a bearer token on GitHub API/download
+# requests (needed for private repos or to dodge unauthenticated rate
+# limits); it is optional otherwise.
 set -euo pipefail
 
 PLATFORM="${1:?usage: resolve-migo-artifact.sh <platform> <dest>}"
@@ -67,9 +71,6 @@ if [ -z "$TAG" ]; then
   exit 3
 fi
 
-ASSET="migo-runtime-${TAG}-${PROFILE}-${ABI}.aar"
-BASE="https://github.com/$REPO/releases/download/$TAG"
-
 # The temp dir must live next to DEST, not in the system default (/tmp): if
 # they are different filesystems, the final `mv` below degrades from an
 # atomic rename into copy-then-unlink, reintroducing the partial-file window
@@ -77,18 +78,48 @@ BASE="https://github.com/$REPO/releases/download/$TAG"
 TMP="$(mktemp -d "$(dirname "$DEST")/.migo-resolve.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
-if ! curl -fsSL "$BASE/$ASSET" -o "$TMP/artifact.aar"; then
+AUTH_HEADER=()
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  AUTH_HEADER=(-H "Authorization: Bearer $GITHUB_TOKEN")
+fi
+
+RELEASE_JSON="$TMP/release.json"
+if [ -n "${MIGO_RELEASE_JSON_OVERRIDE:-}" ]; then
+  # Test-only escape hatch: skip the GitHub API call and use a canned release
+  # payload instead, so asset discovery and the download path can be
+  # exercised without a network dependency or a real migo release.
+  cp "$MIGO_RELEASE_JSON_OVERRIDE" "$RELEASE_JSON"
+else
+  RELEASE_API="https://api.github.com/repos/$REPO/releases/tags/$TAG"
+  if ! curl -fsSL "${AUTH_HEADER[@]}" "$RELEASE_API" -o "$RELEASE_JSON"; then
+    echo "ERROR: could not download the release metadata for tag '$TAG' of $REPO" >&2
+    echo "       (GET $RELEASE_API)." >&2
+    echo "       The tag comes from migo-version.txt; check that the release exists." >&2
+    echo "       To build against a local migo checkout instead, set" >&2
+    echo "       MIGO_LOCAL_REPO=/path/to/migo" >&2
+    exit 4
+  fi
+fi
+
+# Discover the asset instead of guessing its filename by concatenation: the
+# version segment embedded in a release asset name is a product version,
+# which need not equal the git tag used to fetch it (a tag of v0.9.0 can
+# publish assets named ...-0.9.0-...). Selecting on delimiter-bounded
+# segments also means we never pick arbitrarily between ambiguous matches.
+if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PROFILE" "$ABI" < "$RELEASE_JSON")"; then
+  echo "ERROR: could not select a release asset from '$TAG' of $REPO for profile '$PROFILE' abi '$ABI'." >&2
+  exit 4
+fi
+ASSET="$(basename "$ASSET_URL")"
+
+if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL" -o "$TMP/artifact.aar"; then
   echo "ERROR: could not download $ASSET from release '$TAG' of $REPO." >&2
-  echo "       The tag comes from migo-version.txt; check that the release" >&2
-  echo "       exists and publishes an asset named $ASSET." >&2
-  echo "       To build against a local migo checkout instead, set" >&2
-  echo "       MIGO_LOCAL_REPO=/path/to/migo" >&2
   exit 4
 fi
 
 # Checksum verification is not optional: a truncated download is otherwise
 # indistinguishable from a good one until the build fails somewhere unrelated.
-if ! curl -fsSL "$BASE/$ASSET.sha256" -o "$TMP/artifact.sha256"; then
+if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL.sha256" -o "$TMP/artifact.sha256"; then
   echo "ERROR: release '$TAG' publishes $ASSET but no $ASSET.sha256" >&2
   exit 4
 fi
