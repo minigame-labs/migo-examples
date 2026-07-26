@@ -4,8 +4,8 @@
 # Obtains a migo runtime artifact for one platform.
 #
 #   default          discover the matching asset on the release named by
-#                    migo-version.txt, download it, then verify its sha256
-#                    against the checksum published beside it
+#                    migo-version.txt, download it, then verify it against
+#                    the release attestation published beside it
 #   MIGO_LOCAL_REPO  use the artifact built inside that migo checkout instead
 #
 # MIGO_PROFILE selects the product profile (default full), in both modes.
@@ -72,7 +72,7 @@ fi
 # The temp dir must live next to DEST, not in the system default (/tmp): if
 # they are different filesystems, the final `mv` below degrades from an
 # atomic rename into copy-then-unlink, reintroducing the partial-file window
-# that the checksum check below exists to prevent.
+# that the attestation check below exists to prevent.
 TMP="$(mktemp -d "$(dirname "$DEST")/.migo-resolve.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -110,18 +110,22 @@ if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL" -o "$TMP/artifact.aar"; then
   exit 4
 fi
 
-# Checksum verification is not optional: a truncated download is otherwise
-# indistinguishable from a good one until the build fails somewhere unrelated.
-if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL.sha256" -o "$TMP/artifact.sha256"; then
-  echo "ERROR: release '$TAG' publishes $ASSET but no $ASSET.sha256" >&2
+# Verification is not optional: an unverified download is otherwise
+# indistinguishable from a good one until the build fails somewhere
+# unrelated. Migo's release pipeline (build-aar.sh) publishes an attestation
+# beside each AAR (<asset>.attestation.json) -- not a bare <asset>.sha256 --
+# so that is what's fetched and checked here.
+if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL.attestation.json" -o "$TMP/attestation.json"; then
+  echo "ERROR: release '$TAG' publishes $ASSET but no $ASSET.attestation.json" >&2
   exit 4
 fi
 
-EXPECTED="$(awk '{print $1; exit}' "$TMP/artifact.sha256")"
-ACTUAL="$(sha256sum "$TMP/artifact.aar" | awk '{print $1}')"
-if [ "$EXPECTED" != "$ACTUAL" ]; then
+ACTUAL_SIZE="$(wc -c < "$TMP/artifact.aar" | tr -d ' ')"
+ACTUAL_SHA256="$(sha256sum "$TMP/artifact.aar" | awk '{print $1}')"
+if ! python3 "$ROOT_DIR/scripts/lib/verify-attestation.py" "$ASSET" "$ACTUAL_SIZE" "$ACTUAL_SHA256" \
+     < "$TMP/attestation.json"; then
   rm -f "$TMP/artifact.aar"
-  echo "ERROR: sha256 mismatch for $ASSET (expected $EXPECTED, got $ACTUAL)" >&2
+  echo "ERROR: attestation verification failed for $ASSET from release '$TAG' of $REPO." >&2
   exit 5
 fi
 
