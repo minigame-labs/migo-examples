@@ -43,7 +43,15 @@ if [ -n "${MIGO_LOCAL_REPO:-}" ]; then
     echo "       build it with: bash scripts/build-aar.sh debug $ABI --product-profile $PROFILE" >&2
     exit 3
   fi
-  cp "$SRC" "$DEST"
+  # Land the file atomically: copy to a temp file beside the destination, then
+  # rename it into place. If this is interrupted (SIGINT, disk full), the
+  # destination either does not exist or holds the complete file -- never a
+  # truncated one that a later Gradle build would consume as if it were valid.
+  TMP_DEST="$(mktemp "$DEST.XXXXXX")"
+  trap 'rm -f "$TMP_DEST"' EXIT
+  cp "$SRC" "$TMP_DEST"
+  mv "$TMP_DEST" "$DEST"
+  trap - EXIT
   echo "local:$(git -C "$MIGO_LOCAL_REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)"
   exit 0
 fi
