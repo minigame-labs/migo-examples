@@ -32,8 +32,12 @@ fi
 # Verify rather than assume: a silent run-as failure would otherwise look like
 # success. The sentinel is matched whole-line because `ls`-style errors quote the
 # path back at you -- a substring match on the filename would be satisfied by the
-# very error that means the file is missing.
-if ! "${ADB[@]}" shell "run-as $PKG test -f files/migo/games/$GAME_ID/code/game.js && echo MIGO_PUSH_OK" \
+# very error that means the file is missing. `test` is invoked through `sh -c`,
+# not directly: on some devices (confirmed on an API29 x86_64 emulator) run-as
+# can exec real binaries like `ls` but not `test`, which is only a shell
+# builtin there -- a bare `run-as $PKG test ...` fails with "exec failed for
+# test: Permission denied" even though the deploy succeeded.
+if ! "${ADB[@]}" shell "run-as $PKG sh -c 'test -f files/migo/games/$GAME_ID/code/game.js && echo MIGO_PUSH_OK'" \
      | tr -d '\r' | grep -qx MIGO_PUSH_OK; then
   echo "ERROR: game.js is not present in the app's private storage after deploy" >&2
   exit 3
