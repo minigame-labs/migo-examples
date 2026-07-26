@@ -1,0 +1,20 @@
+# Resolved migo artifacts (fetched by scripts/resolve-migo-artifact.sh)
+libs/*.aar
+libs/*.zip
+
+# Android
+*.apk
+*.ap_
+*.aab
+*.dex
+build/
+.gradle/
+local.properties
+.idea/
+*.iml
+.cxx/
+.externalNativeBuild/
+
+# OS
+.DS_Store
+Thumbs.db
