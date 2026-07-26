@@ -8,6 +8,7 @@
 #   MIGO_LOCAL_REPO  use the artifact built inside that migo checkout instead
 #
 # MIGO_ABI selects the Android ABI (default arm64-v8a).
+# MIGO_PROFILE selects the product profile in local mode (default full).
 set -euo pipefail
 
 PLATFORM="${1:?usage: resolve-migo-artifact.sh <platform> <dest>}"
@@ -30,10 +31,16 @@ mkdir -p "$(dirname "$DEST")"
 if [ -n "${MIGO_LOCAL_REPO:-}" ]; then
   # The debug AAR, not the release one: producing a release AAR requires the V8
   # provenance chain, which a plain checkout cannot satisfy.
-  SRC="$MIGO_LOCAL_REPO/platforms/android/dist/migo-debug.aar"
+  # build-aar.sh names its output migo-<product-profile>-<build-type>.aar, so the
+  # profile is part of the filename and cannot be assumed away.
+  PROFILE="${MIGO_PROFILE:-full}"
+  SRC="$MIGO_LOCAL_REPO/platforms/android/dist/migo-${PROFILE}-debug.aar"
   if [ ! -f "$SRC" ]; then
     echo "ERROR: no locally built AAR at $SRC" >&2
-    echo "       build it with: bash scripts/build-aar.sh debug $ABI" >&2
+    echo "       AARs present in that directory:" >&2
+    ls "$MIGO_LOCAL_REPO/platforms/android/dist"/*.aar 2>/dev/null | sed 's|^|         |' >&2 \
+      || echo "         (none)" >&2
+    echo "       build it with: bash scripts/build-aar.sh debug $ABI --product-profile $PROFILE" >&2
     exit 3
   fi
   cp "$SRC" "$DEST"

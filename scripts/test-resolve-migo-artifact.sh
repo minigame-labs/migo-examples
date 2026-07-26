@@ -19,10 +19,22 @@ fi
 # 2. Local mode copies the locally built debug AAR.
 FAKE_REPO="$WORK/migo"
 mkdir -p "$FAKE_REPO/platforms/android/dist"
-echo "fake-aar-bytes" > "$FAKE_REPO/platforms/android/dist/migo-debug.aar"
+echo "fake-aar-bytes" > "$FAKE_REPO/platforms/android/dist/migo-full-debug.aar"
 MIGO_LOCAL_REPO="$FAKE_REPO" bash "$RESOLVER" android-aar "$WORK/local.aar" >/dev/null
 [ -f "$WORK/local.aar" ] || fail "local mode produced no file"
 grep -q "fake-aar-bytes" "$WORK/local.aar" || fail "local mode copied the wrong bytes"
+
+# 5. A dist directory holding only differently-profiled AARs must not satisfy the
+#    default profile. This is the bug the first implementation had: assuming a
+#    bare migo-debug.aar name that build-aar.sh never produces.
+WRONG_PROFILE="$WORK/wrongprofile"
+mkdir -p "$WRONG_PROFILE/platforms/android/dist"
+echo "slim" > "$WRONG_PROFILE/platforms/android/dist/migo-slim-debug.aar"
+if MIGO_LOCAL_REPO="$WRONG_PROFILE" bash "$RESOLVER" android-aar "$WORK/wrong.aar" >/dev/null 2>&1; then
+  fail "default profile resolved against a slim-only dist directory"
+fi
+MIGO_LOCAL_REPO="$WRONG_PROFILE" MIGO_PROFILE=slim bash "$RESOLVER" android-aar "$WORK/slim.aar" >/dev/null \
+  || fail "MIGO_PROFILE=slim did not resolve the slim AAR"
 
 # 3. Local mode fails loudly when the local build is missing, rather than
 #    silently falling back to a download the user did not ask for.
@@ -42,4 +54,4 @@ set -e
 echo "$OUT" | grep -q "migo-version.txt" \
   || fail "default-mode failure does not point at the version pin: $OUT"
 
-echo "OK: resolver contract holds (4 checks)"
+echo "OK: resolver contract holds (5 checks)"
