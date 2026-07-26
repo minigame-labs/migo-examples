@@ -25,7 +25,12 @@ Exit codes:
 import json
 import sys
 
-SCHEMA_PREFIX = "migo-release-attestation/"
+# An explicit allowlist, not a prefix: "starts with migo-release-attestation/"
+# would silently accept a future migo-release-attestation/v2 that reuses the
+# same field names for different semantics. Only schemas this script has
+# actually been verified against belong here; a new version must be added
+# deliberately, not admitted by construction.
+KNOWN_SCHEMAS = frozenset({"migo-release-attestation/v1"})
 
 
 def verify(attestation, expected_filename, expected_size, expected_sha256):
@@ -36,11 +41,9 @@ def verify(attestation, expected_filename, expected_size, expected_sha256):
     past it should be trusted even if it happens to line up.
     """
     schema = attestation.get("schema", "")
-    if not schema.startswith(SCHEMA_PREFIX):
-        return (
-            f"unrecognized attestation schema '{schema}' "
-            f"(expected a schema starting with '{SCHEMA_PREFIX}')"
-        )
+    if schema not in KNOWN_SCHEMAS:
+        known = ", ".join(sorted(KNOWN_SCHEMAS))
+        return f"unrecognized attestation schema '{schema}' (known schemas: {known})"
 
     package_file = attestation.get("package_file")
     if package_file != expected_filename:

@@ -18,6 +18,17 @@ workflow (release.yml) always builds with build-type "release". Each AAR is
 multi-ABI -- Gradle picks the right .so per device at build time -- so there
 is nothing for an ABI to select between at the asset level.
 
+IMPORTANT -- what this selector deliberately does NOT establish: matching
+the profile/build-type tail does not prove the asset is a Migo artifact at
+all. An asset named "something-full-release.aar" attached to the same
+tagged release would structurally match here. That is accepted on purpose:
+constraining the product-name prefix too would walk this back toward the
+filename guessing this design exists to escape. Identity -- "is this really
+the artifact it claims to be" -- is established downstream, by the release
+attestation (verify-attestation.py), whose `package_file` must equal the
+asset's own name. Do not "tighten" this rule into a hardcoded filename, and
+do not treat a match from this script alone as proof of what it returned.
+
 Exit codes:
   0  exactly one match; its download URL is on stdout
   1  no match, or more than one match; a diagnostic listing is on stderr

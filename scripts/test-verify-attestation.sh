@@ -74,4 +74,25 @@ STATUS=$?
 set -e
 [ "$STATUS" -ne 0 ] || fail "malformed JSON should fail"
 
-echo "OK: verify-attestation contract holds (6 checks)"
+# 7. A well-formed but unknown schema version must be refused, not admitted
+#    because it happens to start with the same prefix as a known schema.
+#    This is the whole point of the allowlist: a prefix test would let a
+#    future migo-release-attestation/v2 -- same field names, possibly
+#    different semantics -- pass silently. Everything else here (filename,
+#    size, digest) is byte-identical to the passing real fixture, so a
+#    green result on this case would mean the schema gate isn't gating.
+UNKNOWN_VERSION='{
+  "schema": "migo-release-attestation/v2",
+  "package_file": "migo-full-release.aar",
+  "package_size_bytes": 35912726,
+  "package_sha256": "ebdd7428b8a0a6b270949235527e47262f4a9b6d87ff6ce501c58db18aa23957",
+  "package_index_file": "package-index.json",
+  "package_index_sha256": "e4e276962aa08f4ddc28711477c97e8ad0bc47ba42c1c29b5ee9b3471deb15c7"
+}'
+set +e
+run "$REAL_FILE" "$REAL_SIZE" "$REAL_SHA256" "$UNKNOWN_VERSION" >/dev/null 2>&1
+STATUS=$?
+set -e
+[ "$STATUS" -ne 0 ] || fail "an unknown schema version (v2) must not be accepted just because v1 is known"
+
+echo "OK: verify-attestation contract holds (7 checks)"
