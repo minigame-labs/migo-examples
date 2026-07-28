@@ -48,17 +48,30 @@ fi
 #    available -- not because the version pin is missing or empty. Those are
 #    different failures with different exit codes, and conflating them would let
 #    a resolver that always died at the version-file stage pass this check
-#    forever, including after a real release exists.
-[ -s "$ROOT_DIR/migo-version.txt" ] \
-  || fail "migo-version.txt is missing or empty, so check 4 cannot reach the download path"
+#    forever.
+#
+#    This points the pin at a tag that does not exist, rather than relying on
+#    the real pin having no release behind it. An earlier version of this check
+#    did the latter and passed only while the project had shipped nothing: the
+#    day v0.9.0 was published the resolver started succeeding and this check
+#    went red, having asserted a temporary state instead of an invariant.
+VERSION_FILE="$ROOT_DIR/migo-version.txt"
+VERSION_PIN="$(cat "$VERSION_FILE")"
+restore_pin() { printf '%s\n' "$VERSION_PIN" > "$VERSION_FILE"; }
+trap restore_pin EXIT
+printf '%s\n' "tag-that-does-not-exist-contract-check" > "$VERSION_FILE"
+
 set +e
 OUT="$(bash "$RESOLVER" android-aar "$WORK/dl.aar" 2>&1)"
 STATUS=$?
 set -e
+restore_pin
+trap - EXIT
+
 [ "$STATUS" -eq 4 ] \
-  || fail "default mode should fail with exit 4 (asset unavailable), got $STATUS: $OUT"
+  || fail "an unavailable release must fail with exit 4, got $STATUS: $OUT"
 echo "$OUT" | grep -q "could not download" \
-  || fail "default-mode failure does not name the download as the cause: $OUT"
+  || fail "the failure does not name the download as the cause: $OUT"
 [ -f "$WORK/dl.aar" ] \
   && fail "default mode left a file at the destination despite failing"
 
