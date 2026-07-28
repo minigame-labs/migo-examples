@@ -51,6 +51,19 @@ bash scripts/build-aar.sh debug --product-profile <profile>
 
 `android-aar` 是目前唯一支持的平台取值。
 
+## 不用 Gradle 的 Android 集成(NDK / C ABI)
+
+`android-java/` 示例走的是 Java/Kotlin SDK。若要从原生代码嵌入 Migo,同一个
+release 按 ABI 发布了 C ABI 包:
+
+```bash
+curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.0/migo-sdk-android-arm64-v8a.tar.gz
+tar xzf migo-sdk-android-arm64-v8a.tar.gz
+```
+
+包内 `README.md` 写明了 NDK 消费者必须传的两个 CMake flag;缺了它们构建会失败,
+而报错指向的位置与真正的原因无关。
+
 ## 许可证
 
 见 [LICENSE](LICENSE)。

@@ -55,6 +55,19 @@ Environment variables read by `resolve-migo-artifact.sh`:
 
 `android-aar` is the only supported platform value.
 
+## Android without Gradle (NDK / C ABI)
+
+The `android-java/` example uses the Java/Kotlin SDK. To embed Migo from native
+code instead, the same release publishes a C ABI package per ABI:
+
+```bash
+curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.0/migo-sdk-android-arm64-v8a.tar.gz
+tar xzf migo-sdk-android-arm64-v8a.tar.gz
+```
+
+Its `README.md` carries the two CMake flags an NDK consumer must pass; without
+them the build fails with errors that point somewhere other than the cause.
+
 ## Licence
 
 See [LICENSE](LICENSE).
