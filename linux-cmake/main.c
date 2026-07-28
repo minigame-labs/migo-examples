@@ -31,6 +31,7 @@ static const float SCALE_FACTOR = 1.0f;
 
 static atomic_int g_content_ready;
 static atomic_int g_exit_requested;
+static atomic_int g_error_seen;
 
 /* The engine never calls host code directly: it hands you a task and lets you
  * decide which thread runs it. Callbacks arrive on Migo's own threads, so a
@@ -55,6 +56,7 @@ static void MIGO_CALL on_error(void *user_data, MigoSession *session,
                                const MigoError *error) {
     (void)user_data;
     (void)session;
+    atomic_store(&g_error_seen, 1);
     fprintf(stderr, "[host] error: %s\n",
             (error && error->message_utf8) ? error->message_utf8 : "(no message)");
 }
@@ -299,6 +301,21 @@ int main(int argc, char **argv) {
     migo_engine_destroy(engine);
     XDestroyWindow(display, window);
     XCloseDisplay(display);
+
+    /* Report what happened in the exit code. Without this a host whose content
+     * failed to load still exits 0: the window opened, the engine started and
+     * the loop ran its course -- every step this program controls succeeded.
+     * Only the callbacks know the content never came up, so they have to be
+     * what decides the status. A supervisor, a CI job or a script running this
+     * has nothing else to go on. */
+    if (atomic_load(&g_error_seen)) {
+        fprintf(stderr, "[host] exiting non-zero: the engine reported an error\n");
+        return 1;
+    }
+    if (!atomic_load(&g_content_ready)) {
+        fprintf(stderr, "[host] exiting non-zero: content never became ready\n");
+        return 1;
+    }
     printf("[host] done\n");
     return 0;
 }

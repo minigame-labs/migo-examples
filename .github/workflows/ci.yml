@@ -66,9 +66,21 @@ jobs:
       # Migo checkout. Unlike the Android step above there is no release-missing
       # case to tolerate: the Linux SDK release exists, so a failure here is a
       # real one.
-      - name: Build Linux example
+      - name: Build and run Linux example
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq libx11-dev cmake
-          bash scripts/resolve-migo-artifact.sh linux-sdk linux-cmake/sdk
-          cmake -S linux-cmake -B linux-cmake/build -DCMAKE_PREFIX_PATH="$PWD/linux-cmake/sdk"
-          cmake --build linux-cmake/build --parallel
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libx11-dev cmake xvfb libgl1 libegl1
+          # Xvfb, not a build-only check: the example compiling proves nothing
+          # about whether the runtime attaches a surface and produces a frame.
+          # A headless X server lets CI exercise the path a user actually runs.
+          xvfb-run -a --server-args="-screen 0 720x1280x24" \
+            bash linux-cmake/run.sh demo 8 2>&1 | tee /tmp/linux-example.log
+
+          # The run must reach content-ready and exit cleanly. Grepping the log
+          # rather than trusting the exit code alone: run.sh ends with `exec`,
+          # so a host that started, failed to load content and still returned 0
+          # would otherwise pass.
+          grep -q "content is ready" /tmp/linux-example.log \
+            || { echo "::error::the example never reported content ready"; exit 1; }
+          grep -q "\[host\] done" /tmp/linux-example.log \
+            || { echo "::error::the example did not shut down cleanly"; exit 1; }
