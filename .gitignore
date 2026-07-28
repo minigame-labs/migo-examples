@@ -22,3 +22,7 @@ Thumbs.db
 # Python
 __pycache__/
 *.pyc
+
+# Resolved SDK prefix and build output for the Linux example
+linux-cmake/sdk/
+linux-cmake/build/

@@ -21,15 +21,37 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROFILE="${MIGO_PROFILE:-full}"
 REPO="minigame-labs/migo"
 
+# Each platform names the version file holding its release tag. They are
+# separate because the platforms release independently: the Android runtime and
+# the Linux SDK are cut from different tags, and folding them into one pin would
+# force a lockstep neither side actually has.
 case "$PLATFORM" in
-  android-aar) ;;
+  android-aar) VERSION_FILE="$ROOT_DIR/migo-version.txt" ;;
+  linux-sdk)   VERSION_FILE="$ROOT_DIR/migo-linux-version.txt" ;;
   *)
-    echo "ERROR: unknown platform '$PLATFORM' (supported: android-aar)" >&2
+    echo "ERROR: unknown platform '$PLATFORM' (supported: android-aar, linux-sdk)" >&2
     exit 2
     ;;
 esac
 
 mkdir -p "$(dirname "$DEST")"
+
+if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "linux-sdk" ]; then
+  # The Linux SDK is a prefix tree, not a single file: build-linux-sdk.sh stages
+  # it under dist/ and consumers point CMake or pkg-config at that prefix. So
+  # DEST is a directory here, mirroring what the download path below unpacks.
+  SRC="$MIGO_LOCAL_REPO/dist/migo-linux-x86_64"
+  if [ ! -f "$SRC/lib/libmigo.a" ]; then
+    echo "ERROR: no locally staged Linux SDK at $SRC" >&2
+    echo "       build it with: bash scripts/build-linux-sdk.sh" >&2
+    exit 3
+  fi
+  rm -rf "$DEST"
+  mkdir -p "$DEST"
+  cp -a "$SRC/." "$DEST/"
+  echo "local:$(git -C "$MIGO_LOCAL_REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  exit 0
+fi
 
 if [ -n "${MIGO_LOCAL_REPO:-}" ]; then
   # The debug AAR, not the release one: producing a release AAR requires the V8
@@ -58,14 +80,13 @@ if [ -n "${MIGO_LOCAL_REPO:-}" ]; then
   exit 0
 fi
 
-VERSION_FILE="$ROOT_DIR/migo-version.txt"
 if [ ! -f "$VERSION_FILE" ]; then
-  echo "ERROR: migo-version.txt not found at $VERSION_FILE" >&2
+  echo "ERROR: version pin for '$PLATFORM' not found at $VERSION_FILE" >&2
   exit 3
 fi
 TAG="$(tr -d ' \t\r\n' < "$VERSION_FILE")"
 if [ -z "$TAG" ]; then
-  echo "ERROR: migo-version.txt is empty; it must hold a migo release tag" >&2
+  echo "ERROR: $VERSION_FILE is empty; it must hold a migo release tag" >&2
   exit 3
 fi
 
@@ -99,13 +120,13 @@ fi
 # everything in front of it (product name, version) stays unconstrained.
 # Each AAR is multi-ABI (Gradle picks the right .so per device at build
 # time), so there is no ABI segment to match on at all.
-if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PROFILE" < "$RELEASE_JSON")"; then
-  echo "ERROR: could not select a release asset from '$TAG' of $REPO for profile '$PROFILE'." >&2
+if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PLATFORM" "$PROFILE" < "$RELEASE_JSON")"; then
+  echo "ERROR: could not select a '$PLATFORM' asset from release '$TAG' of $REPO." >&2
   exit 4
 fi
 ASSET="$(basename "$ASSET_URL")"
 
-if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL" -o "$TMP/artifact.aar"; then
+if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL" -o "$TMP/artifact.bin"; then
   echo "ERROR: could not download $ASSET from release '$TAG' of $REPO." >&2
   exit 4
 fi
@@ -120,14 +141,22 @@ if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL.attestation.json" -o "$TMP/attes
   exit 4
 fi
 
-ACTUAL_SIZE="$(wc -c < "$TMP/artifact.aar" | tr -d ' ')"
-ACTUAL_SHA256="$(sha256sum "$TMP/artifact.aar" | awk '{print $1}')"
+ACTUAL_SIZE="$(wc -c < "$TMP/artifact.bin" | tr -d ' ')"
+ACTUAL_SHA256="$(sha256sum "$TMP/artifact.bin" | awk '{print $1}')"
 if ! python3 "$ROOT_DIR/scripts/lib/verify-attestation.py" "$ASSET" "$ACTUAL_SIZE" "$ACTUAL_SHA256" \
      < "$TMP/attestation.json"; then
-  rm -f "$TMP/artifact.aar"
+  rm -f "$TMP/artifact.bin"
   echo "ERROR: attestation verification failed for $ASSET from release '$TAG' of $REPO." >&2
   exit 5
 fi
 
-mv "$TMP/artifact.aar" "$DEST"
+if [ "$PLATFORM" = "linux-sdk" ]; then
+  # The tarball carries a single top-level migo-linux-x86_64/ directory; strip it
+  # so DEST itself becomes the prefix, which is what CMake and pkg-config want.
+  rm -rf "$DEST"
+  mkdir -p "$DEST"
+  tar xzf "$TMP/artifact.bin" -C "$DEST" --strip-components=1
+else
+  mv "$TMP/artifact.bin" "$DEST"
+fi
 echo "$TAG"

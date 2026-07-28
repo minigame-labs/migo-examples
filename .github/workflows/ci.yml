@@ -61,3 +61,14 @@ jobs:
         run: |
           echo "::error::resolve-migo-artifact.sh exited ${{ steps.resolve.outputs.status }}, which is neither success (0) nor the documented no-release-available case (4). Treating this as a real resolver regression, not a skip."
           exit 1
+
+      # The Linux example builds against a published SDK, so it needs no local
+      # Migo checkout. Unlike the Android step above there is no release-missing
+      # case to tolerate: the Linux SDK release exists, so a failure here is a
+      # real one.
+      - name: Build Linux example
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libx11-dev cmake
+          bash scripts/resolve-migo-artifact.sh linux-sdk linux-cmake/sdk
+          cmake -S linux-cmake -B linux-cmake/build -DCMAKE_PREFIX_PATH="$PWD/linux-cmake/sdk"
+          cmake --build linux-cmake/build --parallel

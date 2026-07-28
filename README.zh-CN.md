@@ -9,6 +9,7 @@
 | 目录 | 宿主 |
 |---|---|
 | [`android-java/`](android-java/) | Android, Java/Kotlin SDK |
+| [`linux-cmake/`](linux-cmake/) | Linux,经 CMake 使用 C ABI |
 
 游戏内容位于 [`games/`](games/),每个游戏一个目录。一个游戏目录包含
 `game.js`(入口文件)和 `game.json`。所有宿主示例按名称运行同一份内容。
