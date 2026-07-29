@@ -8,6 +8,7 @@ structurally, in the trailing segments that kind is defined by:
 
   android-aar   ".aar"     ending in [<profile>, "release"]
   linux-sdk     ".tar.gz"  ending in ["linux", "x86_64"]
+  windows-sdk   ".tar.gz"  ending in ["windows", "x86_64"]
 
 e.g. "migo-full-release.aar" and "migo-sdk-linux-x86_64.tar.gz".
 
@@ -50,6 +51,7 @@ BUILD_TYPE = "release"
 KINDS = {
     "android-aar": lambda profile: (".aar", [profile, BUILD_TYPE]),
     "linux-sdk": lambda profile: (".tar.gz", ["linux", "x86_64"]),
+    "windows-sdk": lambda profile: (".tar.gz", ["windows", "x86_64"]),
 }
 
 

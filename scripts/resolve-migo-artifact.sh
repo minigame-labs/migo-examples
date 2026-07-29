@@ -28,13 +28,28 @@ REPO="minigame-labs/migo"
 case "$PLATFORM" in
   android-aar) VERSION_FILE="$ROOT_DIR/migo-version.txt" ;;
   linux-sdk)   VERSION_FILE="$ROOT_DIR/migo-linux-version.txt" ;;
+  windows-sdk) VERSION_FILE="$ROOT_DIR/migo-windows-version.txt" ;;
   *)
-    echo "ERROR: unknown platform '$PLATFORM' (supported: android-aar, linux-sdk)" >&2
+    echo "ERROR: unknown platform '$PLATFORM' (supported: android-aar, linux-sdk, windows-sdk)" >&2
     exit 2
     ;;
 esac
 
 mkdir -p "$(dirname "$DEST")"
+
+if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "windows-sdk" ]; then
+  SRC="$MIGO_LOCAL_REPO/dist/migo-windows-x86_64"
+  if [ ! -f "$SRC/bin/migo.dll" ]; then
+    echo "ERROR: no locally staged Windows SDK at $SRC" >&2
+    echo "       build it with: bash scripts/build-windows-sdk.sh" >&2
+    exit 3
+  fi
+  rm -rf "$DEST"
+  mkdir -p "$DEST"
+  cp -a "$SRC/." "$DEST/"
+  echo "local:$(git -C "$MIGO_LOCAL_REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  exit 0
+fi
 
 if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "linux-sdk" ]; then
   # The Linux SDK is a prefix tree, not a single file: build-linux-sdk.sh stages
@@ -150,7 +165,7 @@ if ! python3 "$ROOT_DIR/scripts/lib/verify-attestation.py" "$ASSET" "$ACTUAL_SIZ
   exit 5
 fi
 
-if [ "$PLATFORM" = "linux-sdk" ]; then
+if [ "$PLATFORM" = "linux-sdk" ] || [ "$PLATFORM" = "windows-sdk" ]; then
   # The tarball carries a single top-level migo-linux-x86_64/ directory; strip it
   # so DEST itself becomes the prefix, which is what CMake and pkg-config want.
   rm -rf "$DEST"

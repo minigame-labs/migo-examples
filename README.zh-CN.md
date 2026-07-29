@@ -10,13 +10,20 @@
 |---|---|
 | [`android-java/`](android-java/) | Android, Java/Kotlin SDK |
 | [`linux-cmake/`](linux-cmake/) | Linux,经 CMake 使用 C ABI |
+| [`windows-cmake/`](windows-cmake/) | Windows,经 CMake 使用 C ABI |
 
 游戏内容位于 [`games/`](games/),每个游戏一个目录。一个游戏目录包含
 `game.js`(入口文件)和 `game.json`。所有宿主示例按名称运行同一份内容。
 
 ## 运行时版本
 
-所有示例都基于 [`migo-version.txt`](migo-version.txt) 中指定的 Migo release 构建。
+Migo 各平台分开发布,因此每个平台钉在各自的 release 上:
+
+| 平台取值 | 版本文件 |
+|---|---|
+| `android-aar` | [`migo-version.txt`](migo-version.txt) |
+| `linux-sdk` | [`migo-linux-version.txt`](migo-linux-version.txt) |
+| `windows-sdk` | [`migo-windows-version.txt`](migo-windows-version.txt) |
 
 ## 获取运行时
 
@@ -49,7 +56,9 @@ bash scripts/build-aar.sh debug --product-profile <profile>
 | `MIGO_PROFILE` | 两种模式下都生效的产品 profile(默认 `full`)。 |
 | `GITHUB_TOKEN` | 默认模式下,随 GitHub API/下载请求发送的 bearer token。 |
 
-`android-aar` 是目前唯一支持的平台取值。
+平台取值为 `android-aar`、`linux-sdk` 和 `windows-sdk`。目标路径按平台不同:
+`android-aar` 写出单个 `.aar` 文件,`linux-sdk` 与 `windows-sdk` 解包成一个
+供 `find_package(migo)` 读取的前缀目录。
 
 ## 不用 Gradle 的 Android 集成(NDK / C ABI)
 

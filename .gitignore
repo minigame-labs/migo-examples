@@ -23,6 +23,8 @@ Thumbs.db
 __pycache__/
 *.pyc
 
-# Resolved SDK prefix and build output for the Linux example
+# Resolved SDK prefixes and build output for the C ABI examples
 linux-cmake/sdk/
 linux-cmake/build/
+windows-cmake/sdk/
+windows-cmake/build/

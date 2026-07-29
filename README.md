@@ -11,6 +11,7 @@ Supported platforms:
 |---|---|
 | [`android-java/`](android-java/) | Android, Java/Kotlin SDK |
 | [`linux-cmake/`](linux-cmake/) | Linux, C ABI through CMake |
+| [`windows-cmake/`](windows-cmake/) | Windows, C ABI through CMake |
 
 Game content lives in [`games/`](games/), one directory per game. A game
 directory holds `game.js` (entry point) and `game.json`. Every host example
@@ -18,8 +19,14 @@ runs the same content by name.
 
 ## Runtime version
 
-Every example builds against the Migo release named in
-[`migo-version.txt`](migo-version.txt).
+Each platform is pinned to its own release, because Migo publishes them
+separately:
+
+| Platform value | Pin file |
+|---|---|
+| `android-aar` | [`migo-version.txt`](migo-version.txt) |
+| `linux-sdk` | [`migo-linux-version.txt`](migo-linux-version.txt) |
+| `windows-sdk` | [`migo-windows-version.txt`](migo-windows-version.txt) |
 
 ## Getting the runtime
 
@@ -53,7 +60,10 @@ Environment variables read by `resolve-migo-artifact.sh`:
 | `MIGO_PROFILE` | Product profile to resolve, in both modes (default `full`). |
 | `GITHUB_TOKEN` | Bearer token sent on GitHub API/download requests in default mode. |
 
-`android-aar` is the only supported platform value.
+Platform values are `android-aar`, `linux-sdk` and `windows-sdk`. The
+destination differs by platform: `android-aar` writes a single `.aar` file,
+while `linux-sdk` and `windows-sdk` unpack into a prefix directory that
+`find_package(migo)` reads.
 
 ## Android without Gradle (NDK / C ABI)
 
