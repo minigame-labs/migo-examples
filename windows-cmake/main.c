@@ -323,64 +323,12 @@ int main(int argc, char **argv) {
             DispatchMessageA(&message);
         }
 
-        /* Handle window resize by reattaching with new dimensions.
-         * Only enabled after content is ready to avoid breaking initial setup. */
-        if (InterlockedCompareExchange(&g_resize_handling_enabled, 0, 0)) {
-            LONG current_width = InterlockedCompareExchange(&g_window_width, 0, 0);
-            LONG current_height = InterlockedCompareExchange(&g_window_height, 0, 0);
-            if (current_width != g_last_width || current_height != g_last_height) {
-                if (current_width > 0 && current_height > 0) {
-                    printf("[host] window resized to %ldx%ld\n", current_width, current_height);
-                    fflush(stdout);
-
-                    /* Detach old surface before attaching new one. */
-                    if (g_attachment) {
-                        if (detach_and_await_release(g_attachment) != 0) {
-                            fprintf(stderr, "[host] detach after resize failed\n");
-                            fflush(stderr);
-                            g_attachment = NULL;
-                        } else {
-                            g_attachment = NULL;
-                        }
-                    }
-
-                    /* Reattach with new dimensions. */
-                    MigoWin32HwndDescriptor win32;
-                    memset(&win32, 0, sizeof win32);
-                    win32.struct_size = (uint32_t)sizeof win32;
-                    win32.abi_version = MIGO_ABI_VERSION_CURRENT;
-                    win32.platform_kind = MIGO_PLATFORM_WIN32_HWND;
-                    win32.flags = MIGO_PLATFORM_DESCRIPTOR_FLAG_NONE;
-                    win32.hwnd = window;
-
-                    MigoSurfaceDescriptor new_surface;
-                    memset(&new_surface, 0, sizeof new_surface);
-                    new_surface.struct_size = (uint32_t)sizeof new_surface;
-                    new_surface.abi_version = MIGO_ABI_VERSION_CURRENT;
-                    new_surface.generation = 2;
-                    new_surface.platform_kind = MIGO_PLATFORM_WIN32_HWND;
-                    new_surface.flags = MIGO_SURFACE_DESCRIPTOR_FLAG_NONE;
-                    new_surface.width_pixels = current_width;
-                    new_surface.height_pixels = current_height;
-                    new_surface.scale_factor = SCALE_FACTOR;
-                    new_surface.color_space = MIGO_COLOR_SPACE_SRGB;
-                    new_surface.alpha_mode = MIGO_ALPHA_MODE_OPAQUE;
-                    new_surface.preferred_presentation_mode = MIGO_PRESENTATION_MODE_DEFAULT;
-                    new_surface.capability_flags = MIGO_SURFACE_CAPABILITY_NONE;
-                    new_surface.platform_descriptor_size = (uint32_t)sizeof win32;
-                    new_surface.platform_descriptor = &win32;
-
-                    result = migo_session_attach_surface(session, &new_surface, &g_attachment);
-                    if (result != MIGO_OK) {
-                        fprintf(stderr, "[host] reattach after resize failed: %d\n", (int)result);
-                        fflush(stderr);
-                    } else {
-                        g_last_width = current_width;
-                        g_last_height = current_height;
-                    }
-                }
-            }
-        }
+        /* TODO: Window resize handling.
+         * Currently disabled: detach_and_await_release blocks the main thread for up to 2s,
+         * causing the window to hang during resize. This needs async redesign. */
+        (void)g_resize_handling_enabled;
+        (void)g_last_width;
+        (void)g_last_height;
 
         Sleep(16);
     }
