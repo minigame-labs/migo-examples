@@ -48,6 +48,8 @@ BUILD_TYPE = "release"
 
 # Each kind maps to (filename suffix, trailing "-"-separated segments). Adding a
 # platform means adding a row here, not a second matching rule elsewhere.
+# Note: linux/windows SDK assets may be named migo-{linux,windows}-x86_64.tar.gz
+# (without "sdk") so we accept both forms.
 KINDS = {
     "android-aar": lambda profile: (".aar", [profile, BUILD_TYPE]),
     "linux-sdk": lambda profile: (".tar.gz", ["linux", "x86_64"]),

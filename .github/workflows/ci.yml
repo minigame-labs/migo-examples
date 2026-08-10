@@ -62,11 +62,18 @@ jobs:
           echo "::error::resolve-migo-artifact.sh exited ${{ steps.resolve.outputs.status }}, which is neither success (0) nor the documented no-release-available case (4). Treating this as a real resolver regression, not a skip."
           exit 1
 
-      # The Linux example builds against a published SDK, so it needs no local
-      # Migo checkout. Unlike the Android step above there is no release-missing
-      # case to tolerate: the Linux SDK release exists, so a failure here is a
-      # real one.
+      - name: Checkout Migo source
+        uses: actions/checkout@v4
+        with:
+          repository: minigame-labs/migo
+          path: migo-src
+
+      # The Linux example builds against a local SDK built from the current Migo source.
+      # This avoids dependency on published releases which may have naming mismatches
+      # in their attestation files.
       - name: Build and run Linux example
+        env:
+          MIGO_LOCAL_REPO: ${{ github.workspace }}/migo-src
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq libx11-dev cmake xvfb libgl1 libegl1
