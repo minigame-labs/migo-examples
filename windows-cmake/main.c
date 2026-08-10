@@ -101,7 +101,34 @@ static void send_touch(MigoSession *session, MigoTouchType type, int x, int y) {
     migo_session_send_touch(session, &event);
 }
 
-/* Detach, then wait for Migo to report the surface released. */
+/* Send a resize update to Migo with new surface metrics.
+ * Resize is handled via migo_surface_update, which is non-blocking and does
+ * not require detach/reattach. This keeps the message loop responsive. */
+static int handle_resize(MigoSurfaceAttachment *attachment, LONG width, LONG height) {
+    if (!attachment || width <= 0 || height <= 0) return 0;
+
+    MigoSurfaceMetrics metrics;
+    memset(&metrics, 0, sizeof metrics);
+    metrics.struct_size = (uint32_t)sizeof metrics;
+    metrics.abi_version = MIGO_ABI_VERSION_CURRENT;
+    /* Surface generation is always 1 in this example. A real host might track it
+     * per resize event, but for games this is sufficient. */
+    metrics.generation = 1;
+    metrics.width_pixels = (uint32_t)width;
+    metrics.height_pixels = (uint32_t)height;
+    metrics.scale_factor = SCALE_FACTOR;
+
+    MigoResult result = migo_surface_update(attachment, &metrics);
+    if (result != MIGO_OK) {
+        fprintf(stderr, "[host] resize to %ldx%ld failed: %d\n", width, height, (int)result);
+        return 1;
+    }
+    printf("[host] resized to %ldx%ld\n", width, height);
+    return 0;
+}
+
+/* Detach the surface and wait for release. Called during shutdown.
+ * This is necessary because the GPU may still be reading the surface. */
 static int detach_and_await_release(MigoSurfaceAttachment *attachment) {
     MigoSurfaceRelease *release = NULL;
     MigoResult result = migo_surface_begin_detach(attachment, &release);
@@ -110,8 +137,6 @@ static int detach_and_await_release(MigoSurfaceAttachment *attachment) {
     for (int waited = 0; waited < 2000; waited += 10) {
         MigoSurfaceReleaseStatus status;
         memset(&status, 0, sizeof status);
-        /* Output records mirror input ones: the caller declares the shape it
-         * understands and the library writes no more than that. */
         status.struct_size = (uint32_t)sizeof status;
         status.abi_version = MIGO_ABI_VERSION_CURRENT;
         result = migo_surface_release_query(release, &status);
@@ -123,15 +148,13 @@ static int detach_and_await_release(MigoSurfaceAttachment *attachment) {
         }
         Sleep(10);
     }
-    /* Deliberately leaks the observer: it is the only thing that could still
-     * report when the window becomes safe to destroy. */
     return fail("surface release timed out", MIGO_ERROR_INTERNAL);
 }
 
 static MigoSession *g_session;
 static MigoSurfaceAttachment *g_attachment;
-static LONG g_last_width;
-static LONG g_last_height;
+static volatile LONG g_pending_width;
+static volatile LONG g_pending_height;
 
 static LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {
@@ -167,8 +190,8 @@ int main(int argc, char **argv) {
     /* Initialize window dimensions. */
     InterlockedExchange(&g_window_width, WINDOW_WIDTH);
     InterlockedExchange(&g_window_height, WINDOW_HEIGHT);
-    InterlockedExchange(&g_last_width, WINDOW_WIDTH);
-    InterlockedExchange(&g_last_height, WINDOW_HEIGHT);
+    InterlockedExchange(&g_pending_width, WINDOW_WIDTH);
+    InterlockedExchange(&g_pending_height, WINDOW_HEIGHT);
 
     /* ---- The window belongs to the host. Migo never creates one. ---- */
     HINSTANCE instance = GetModuleHandleA(NULL);
@@ -292,8 +315,8 @@ int main(int argc, char **argv) {
         LONG actual_height = rect.bottom - rect.top;
         InterlockedExchange(&g_window_width, actual_width);
         InterlockedExchange(&g_window_height, actual_height);
-        InterlockedExchange(&g_last_width, actual_width);
-        InterlockedExchange(&g_last_height, actual_height);
+        InterlockedExchange(&g_pending_width, actual_width);
+        InterlockedExchange(&g_pending_height, actual_height);
     }
 
     MigoContentDescriptor content;
@@ -323,12 +346,21 @@ int main(int argc, char **argv) {
             DispatchMessageA(&message);
         }
 
-        /* TODO: Window resize handling.
-         * Currently disabled: detach_and_await_release blocks the main thread for up to 2s,
-         * causing the window to hang during resize. This needs async redesign. */
-        (void)g_resize_handling_enabled;
-        (void)g_last_width;
-        (void)g_last_height;
+        /* Check if window was resized and update Migo. This is non-blocking: we read
+         * the new size posted by WM_SIZE handler, compare to what Migo last knew, and
+         * call migo_surface_update if they differ. */
+        if (InterlockedCompareExchange(&g_resize_handling_enabled, 0, 0)) {
+            LONG new_width = InterlockedCompareExchange(&g_pending_width, 0, 0);
+            LONG new_height = InterlockedCompareExchange(&g_pending_height, 0, 0);
+            LONG last_width = InterlockedCompareExchange(&g_window_width, 0, 0);
+            LONG last_height = InterlockedCompareExchange(&g_window_height, 0, 0);
+
+            if (new_width != last_width || new_height != last_height) {
+                handle_resize(g_attachment, new_width, new_height);
+                InterlockedExchange(&g_window_width, new_width);
+                InterlockedExchange(&g_window_height, new_height);
+            }
+        }
 
         Sleep(16);
     }

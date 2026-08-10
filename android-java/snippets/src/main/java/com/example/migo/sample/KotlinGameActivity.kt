@@ -1,6 +1,7 @@
 package com.example.migo.sample
 
 import android.app.Activity
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import android.view.SurfaceHolder
@@ -14,6 +15,16 @@ import com.migo.runtime.callback.GameSessionListener
 
 /**
  * Kotlin example showing idiomatic usage with extension functions.
+ *
+ * To handle device rotation without recreating the surface (and thus avoiding render
+ * interruption), declare this Activity in your AndroidManifest.xml with configChanges:
+ *
+ *     <activity
+ *         android:name="com.example.migo.sample.KotlinGameActivity"
+ *         android:configChanges="orientation|screenSize|keyboardHidden" />
+ *
+ * This allows the Activity to handle rotation events itself, calling onConfigurationChanged
+ * instead of being destroyed and recreated.
  */
 class KotlinGameActivity : Activity(), SurfaceHolder.Callback {
 
@@ -127,6 +138,24 @@ class KotlinGameActivity : Activity(), SurfaceHolder.Callback {
     override fun onDestroy() {
         session?.close()
         super.onDestroy()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // When the device rotates (with configChanges declared in manifest),
+        // the surface is not recreated but the view dimensions change.
+        // We notify Migo of the new dimensions via surfaceChanged,
+        // which is called when the SurfaceView's dimensions change.
+        // If surfaceChanged is not called automatically, manually update:
+        session?.let { sess ->
+            val view = (currentFocus as? SurfaceView) ?: return
+            val width = view.width
+            val height = view.height
+            if (width > 0 && height > 0) {
+                sess.updateSurface(view.holder.surface, width, height)
+                Log.d(TAG, "Rotation handled: $width x $height")
+            }
+        }
     }
 }
 

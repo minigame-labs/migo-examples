@@ -32,6 +32,9 @@ static const float SCALE_FACTOR = 1.0f;
 static atomic_int g_content_ready;
 static atomic_int g_exit_requested;
 static atomic_int g_error_seen;
+static atomic_int g_resize_pending;
+static _Atomic(int) g_pending_width;
+static _Atomic(int) g_pending_height;
 
 /* The engine never calls host code directly: it hands you a task and lets you
  * decide which thread runs it. Callbacks arrive on Migo's own threads, so a
@@ -100,6 +103,29 @@ static void send_touch(MigoSession *session, MigoTouchType type, int x, int y) {
     migo_session_send_touch(session, &event);
 }
 
+/* Send a resize update to Migo with new surface metrics.
+ * Resize is handled via migo_surface_update, which is non-blocking. */
+static int handle_resize(MigoSurfaceAttachment *attachment, int width, int height) {
+    if (!attachment || width <= 0 || height <= 0) return 0;
+
+    MigoSurfaceMetrics metrics;
+    memset(&metrics, 0, sizeof metrics);
+    metrics.struct_size = (uint32_t)sizeof metrics;
+    metrics.abi_version = MIGO_ABI_VERSION_CURRENT;
+    metrics.generation = 1;
+    metrics.width_pixels = (uint32_t)width;
+    metrics.height_pixels = (uint32_t)height;
+    metrics.scale_factor = SCALE_FACTOR;
+
+    MigoResult result = migo_surface_update(attachment, &metrics);
+    if (result != MIGO_OK) {
+        fprintf(stderr, "[host] resize to %dx%d failed: %d\n", width, height, (int)result);
+        return 1;
+    }
+    printf("[host] resized to %dx%d\n", width, height);
+    return 0;
+}
+
 /* Detach, then wait for Migo to report the surface released. */
 static int detach_and_await_release(MigoSurfaceAttachment *attachment) {
     MigoSurfaceRelease *release = NULL;
@@ -150,6 +176,7 @@ int main(int argc, char **argv) {
         display, RootWindow(display, screen), 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
         BlackPixel(display, screen), BlackPixel(display, screen));
     XStoreName(display, window, "migo linux example");
+    /* Listen for structure changes (resize) and button input. */
     XSelectInput(display, window,
                  StructureNotifyMask | ButtonPressMask | ButtonReleaseMask);
     Atom wm_delete = XInternAtom(display, "WM_DELETE_WINDOW", False);
@@ -266,6 +293,11 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     /* ---- The host owns the event loop; Migo renders on its own thread. ---- */
+    int current_width = WINDOW_WIDTH;
+    int current_height = WINDOW_HEIGHT;
+    atomic_store(&g_pending_width, current_width);
+    atomic_store(&g_pending_height, current_height);
+
     for (int elapsed = 0; elapsed < seconds * 1000; elapsed += 16) {
         while (XPending(display) > 0) {
             XEvent event;
@@ -276,12 +308,31 @@ int main(int argc, char **argv) {
                 elapsed = seconds * 1000;
                 break;
             }
+            if (event.type == ConfigureNotify) {
+                int new_width = event.xconfigure.width;
+                int new_height = event.xconfigure.height;
+                atomic_store(&g_pending_width, new_width);
+                atomic_store(&g_pending_height, new_height);
+                atomic_store(&g_resize_pending, 1);
+            }
             if (event.type == ButtonPress && event.xbutton.button == Button1) {
                 send_touch(session, MIGO_TOUCH_START, event.xbutton.x, event.xbutton.y);
             } else if (event.type == ButtonRelease && event.xbutton.button == Button1) {
                 send_touch(session, MIGO_TOUCH_END, event.xbutton.x, event.xbutton.y);
             }
         }
+
+        /* Process pending resize if dimensions changed. */
+        if (atomic_exchange(&g_resize_pending, 0)) {
+            int new_width = atomic_load(&g_pending_width);
+            int new_height = atomic_load(&g_pending_height);
+            if (new_width != current_width || new_height != current_height) {
+                handle_resize(attachment, new_width, new_height);
+                current_width = new_width;
+                current_height = new_height;
+            }
+        }
+
         if (atomic_load(&g_exit_requested)) break;
         sleep_ms(16);
     }
