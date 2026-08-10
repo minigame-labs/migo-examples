@@ -75,6 +75,10 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.95.0
           source "$HOME/.cargo/env"
 
+      - name: Fetch Linux sysroot
+        working-directory: migo-src
+        run: bash scripts/fetch-linux-sysroot.sh
+
       - name: Build Linux SDK from source
         working-directory: migo-src
         run: |
