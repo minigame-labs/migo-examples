@@ -68,6 +68,19 @@ jobs:
           repository: minigame-labs/migo
           path: migo-src
 
+      - name: Install Rust and build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libx11-dev cmake xvfb libgl1 libegl1
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.95.0
+          source "$HOME/.cargo/env"
+
+      - name: Build Linux SDK from source
+        working-directory: migo-src
+        run: |
+          source "$HOME/.cargo/env"
+          bash scripts/build-linux-sdk.sh
+
       # The Linux example builds against a local SDK built from the current Migo source.
       # This avoids dependency on published releases which may have naming mismatches
       # in their attestation files.
@@ -75,11 +88,6 @@ jobs:
         env:
           MIGO_LOCAL_REPO: ${{ github.workspace }}/migo-src
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq libx11-dev cmake xvfb libgl1 libegl1
-          # Xvfb, not a build-only check: the example compiling proves nothing
-          # about whether the runtime attaches a surface and produces a frame.
-          # A headless X server lets CI exercise the path a user actually runs.
           xvfb-run -a --server-args="-screen 0 720x1280x24" \
             bash linux-cmake/run.sh demo 8 2>&1 | tee /tmp/linux-example.log
 
