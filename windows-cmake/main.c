@@ -59,8 +59,9 @@ static void MIGO_CALL on_error(void *user_data, MigoSession *session,
     (void)user_data;
     (void)session;
     InterlockedExchange(&g_error_seen, 1);
-    fprintf(stderr, "[host] error: %s\n",
+    fprintf(stderr, "[host] *** ERROR ***: %s\n",
             (error && error->message_utf8) ? error->message_utf8 : "(no message)");
+    fflush(stderr);
 }
 
 static void MIGO_CALL on_exit_requested(void *user_data, MigoSession *session) {
@@ -292,6 +293,22 @@ int main(int argc, char **argv) {
     if (result != MIGO_OK) return fail("migo_session_load_content", result);
 
     printf("[host] running '%s' for %ds in HWND %p\n", content_id, seconds, (void *)window);
+    printf("[host] window size: %ldx%ld\n", InterlockedCompareExchange(&g_window_width, 0, 0),
+                                             InterlockedCompareExchange(&g_window_height, 0, 0));
+    printf("[host] checking for required DLLs...\n");
+
+    /* Check if migo.dll exists and can be loaded. */
+    HMODULE migo_dll = GetModuleHandleA("migo.dll");
+    if (!migo_dll) {
+        fprintf(stderr, "[host] WARNING: migo.dll not yet loaded\n");
+    } else {
+        printf("[host] ✓ migo.dll is loaded\n");
+    }
+
+    /* Check for ANGLE DLLs. */
+    HMODULE angle_dll = GetModuleHandleA("d3d11.dll");
+    printf("[host] d3d11.dll: %s\n", angle_dll ? "✓ loaded" : "(not loaded yet)");
+
     fflush(stdout);
 
     /* ---- The host owns the message loop; Migo renders on its own thread. ---- */
