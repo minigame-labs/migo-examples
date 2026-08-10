@@ -32,6 +32,8 @@ static const float SCALE_FACTOR = 1.0f;
 static volatile LONG g_content_ready;
 static volatile LONG g_exit_requested;
 static volatile LONG g_error_seen;
+static volatile LONG g_window_width;
+static volatile LONG g_window_height;
 
 /* The engine never calls host code directly: it hands you a task and lets you
  * decide which thread runs it. Callbacks arrive on Migo's own threads, so a
@@ -123,6 +125,9 @@ static int detach_and_await_release(MigoSurfaceAttachment *attachment) {
 }
 
 static MigoSession *g_session;
+static MigoSurfaceAttachment *g_attachment;
+static LONG g_last_width;
+static LONG g_last_height;
 
 static LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {
@@ -132,6 +137,13 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPAR
     case WM_LBUTTONUP:
         if (g_session) send_touch(g_session, MIGO_TOUCH_END, LOWORD(lparam), HIWORD(lparam));
         return 0;
+    case WM_SIZE: {
+        int width = LOWORD(lparam);
+        int height = HIWORD(lparam);
+        InterlockedExchange(&g_window_width, width);
+        InterlockedExchange(&g_window_height, height);
+        return 0;
+    }
     case WM_CLOSE:
         InterlockedExchange(&g_exit_requested, 1);
         return 0;
@@ -147,6 +159,12 @@ int main(int argc, char **argv) {
     const char *files_dir = (argc > 1) ? argv[1] : "C:\\Temp\\migo-windows-example\\files";
     const char *content_id = (argc > 2) ? argv[2] : "demo";
     const int seconds = (argc > 3) ? atoi(argv[3]) : 15;
+
+    /* Initialize window dimensions. */
+    InterlockedExchange(&g_window_width, WINDOW_WIDTH);
+    InterlockedExchange(&g_window_height, WINDOW_HEIGHT);
+    InterlockedExchange(&g_last_width, WINDOW_WIDTH);
+    InterlockedExchange(&g_last_height, WINDOW_HEIGHT);
 
     /* ---- The window belongs to the host. Migo never creates one. ---- */
     HINSTANCE instance = GetModuleHandleA(NULL);
@@ -259,8 +277,7 @@ int main(int argc, char **argv) {
     surface.platform_descriptor_size = (uint32_t)sizeof win32;
     surface.platform_descriptor = &win32;
 
-    MigoSurfaceAttachment *attachment = NULL;
-    result = migo_session_attach_surface(session, &surface, &attachment);
+    result = migo_session_attach_surface(session, &surface, &g_attachment);
     if (result != MIGO_OK) return fail("migo_session_attach_surface", result);
 
     MigoContentDescriptor content;
@@ -289,6 +306,56 @@ int main(int argc, char **argv) {
             TranslateMessage(&message);
             DispatchMessageA(&message);
         }
+
+        /* Handle window resize by reattaching with new dimensions. */
+        LONG current_width = InterlockedCompareExchange(&g_window_width, 0, 0);
+        LONG current_height = InterlockedCompareExchange(&g_window_height, 0, 0);
+        if (current_width != g_last_width || current_height != g_last_height) {
+            if (current_width > 0 && current_height > 0) {
+                printf("[host] window resized to %ldx%ld\n", current_width, current_height);
+
+                /* Detach old surface before attaching new one. */
+                if (g_attachment) {
+                    detach_and_await_release(g_attachment);
+                    g_attachment = NULL;
+                }
+
+                /* Reattach with new dimensions. */
+                MigoWin32HwndDescriptor win32;
+                memset(&win32, 0, sizeof win32);
+                win32.struct_size = (uint32_t)sizeof win32;
+                win32.abi_version = MIGO_ABI_VERSION_CURRENT;
+                win32.platform_kind = MIGO_PLATFORM_WIN32_HWND;
+                win32.flags = MIGO_PLATFORM_DESCRIPTOR_FLAG_NONE;
+                win32.hwnd = window;
+
+                MigoSurfaceDescriptor new_surface;
+                memset(&new_surface, 0, sizeof new_surface);
+                new_surface.struct_size = (uint32_t)sizeof new_surface;
+                new_surface.abi_version = MIGO_ABI_VERSION_CURRENT;
+                new_surface.generation = 2;
+                new_surface.platform_kind = MIGO_PLATFORM_WIN32_HWND;
+                new_surface.flags = MIGO_SURFACE_DESCRIPTOR_FLAG_NONE;
+                new_surface.width_pixels = current_width;
+                new_surface.height_pixels = current_height;
+                new_surface.scale_factor = SCALE_FACTOR;
+                new_surface.color_space = MIGO_COLOR_SPACE_SRGB;
+                new_surface.alpha_mode = MIGO_ALPHA_MODE_OPAQUE;
+                new_surface.preferred_presentation_mode = MIGO_PRESENTATION_MODE_DEFAULT;
+                new_surface.capability_flags = MIGO_SURFACE_CAPABILITY_NONE;
+                new_surface.platform_descriptor_size = (uint32_t)sizeof win32;
+                new_surface.platform_descriptor = &win32;
+
+                result = migo_session_attach_surface(session, &new_surface, &g_attachment);
+                if (result != MIGO_OK) {
+                    fprintf(stderr, "[host] reattach after resize failed: %d\n", (int)result);
+                } else {
+                    g_last_width = current_width;
+                    g_last_height = current_height;
+                }
+            }
+        }
+
         Sleep(16);
     }
 
@@ -296,7 +363,7 @@ int main(int argc, char **argv) {
      * Detaching is asynchronous and that is load-bearing: the render thread may
      * still be reading the window. Destroying it before the release reports
      * RELEASED is a use-after-free in the driver, not a tidiness issue. */
-    int detach_failed = detach_and_await_release(attachment);
+    int detach_failed = (g_attachment != NULL) ? detach_and_await_release(g_attachment) : 0;
     g_session = NULL;
     migo_session_destroy(session);
     migo_engine_destroy(engine);
