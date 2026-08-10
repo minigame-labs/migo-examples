@@ -71,7 +71,7 @@ jobs:
       - name: Install Rust and build dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq libx11-dev cmake xvfb libgl1 libegl1
+          sudo apt-get install -y -qq libx11-dev cmake xvfb libgl1 libegl1 lld
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.95.0
           source "$HOME/.cargo/env"
 
