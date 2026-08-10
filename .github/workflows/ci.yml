@@ -79,6 +79,10 @@ jobs:
         working-directory: migo-src
         run: bash scripts/fetch-linux-sysroot.sh
 
+      - name: Fetch V8 archives
+        working-directory: migo-src
+        run: bash scripts/fetch-v8-archives.sh
+
       - name: Build Linux SDK from source
         working-directory: migo-src
         run: |
