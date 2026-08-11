@@ -8,6 +8,7 @@ prints the `browser_download_url` of the matching asset:
   android-aar   exact filename "migo-android-java.aar"
   linux-sdk     ".tar.gz"  ending, structurally, in ["linux", "x86_64"]
   windows-sdk   ".tar.gz"  ending, structurally, in ["windows", "x86_64"]
+  ohos-sdk      ".tar.gz"  ending, structurally, in ["ohos", <arch>]
 
 e.g. "migo-android-java.aar" and "migo-sdk-linux-x86_64.tar.gz".
 
@@ -49,13 +50,19 @@ import sys
 # why this kind is matched by exact name instead of structurally.
 ANDROID_AAR_FILENAME = "migo-android-java.aar"
 
-# linux-sdk/windows-sdk map to (filename suffix, trailing "-"-separated
-# segments). Adding a platform means adding a row here, not a second matching
-# rule elsewhere. Note: their assets may be named migo-{linux,windows}-x86_64.tar.gz
-# (without "sdk") so we accept both forms.
+# linux-sdk/windows-sdk/ohos-sdk map to (filename suffix, trailing
+# "-"-separated segments). Adding a platform means adding a row here, not a
+# second matching rule elsewhere. Note: their assets may be named
+# migo-{linux,windows}-x86_64.tar.gz (without "sdk") so we accept both forms.
+#
+# ohos-sdk is the odd one out: Android's ABIs live in one universal AAR and
+# Linux/Windows only ship one target, but OpenHarmony ships one tarball per
+# architecture (no fat package -- see build-ohos-sdk.sh), so its trailing
+# segment is the caller's arch instead of a fixed literal.
 STRUCTURAL_KINDS = {
-    "linux-sdk": lambda profile: (".tar.gz", ["linux", "x86_64"]),
-    "windows-sdk": lambda profile: (".tar.gz", ["windows", "x86_64"]),
+    "linux-sdk": lambda profile, arch: (".tar.gz", ["linux", "x86_64"]),
+    "windows-sdk": lambda profile, arch: (".tar.gz", ["windows", "x86_64"]),
+    "ohos-sdk": lambda profile, arch: (".tar.gz", ["ohos", arch]),
 }
 KINDS = {"android-aar", *STRUCTURAL_KINDS}
 
@@ -79,14 +86,14 @@ def matches_trailing(name, suffix, trailing):
     return len(segments) >= len(trailing) and segments[-len(trailing):] == trailing
 
 
-def select(release, kind, profile):
+def select(release, kind, profile, arch):
     """Returns (matches, all_names) for a parsed release JSON object."""
     assets = release.get("assets", []) or []
     all_names = [a.get("name", "") for a in assets]
     if kind == "android-aar":
         matches = [a for a in assets if a.get("name", "") == ANDROID_AAR_FILENAME]
     else:
-        suffix, trailing = STRUCTURAL_KINDS[kind](profile)
+        suffix, trailing = STRUCTURAL_KINDS[kind](profile, arch)
         matches = [
             a for a in assets if matches_trailing(a.get("name", ""), suffix, trailing)
         ]
@@ -94,14 +101,15 @@ def select(release, kind, profile):
 
 
 def main(argv):
-    if len(argv) != 3:
+    if len(argv) != 4:
         print(
-            "usage: select-release-asset.py <kind> <profile> < release.json",
+            "usage: select-release-asset.py <kind> <profile> <arch> < release.json",
             file=sys.stderr,
         )
+        print("  <arch> is ignored except by ohos-sdk", file=sys.stderr)
         print(f"  kinds: {', '.join(sorted(KINDS))}", file=sys.stderr)
         return 2
-    kind, profile = argv[1], argv[2]
+    kind, profile, arch = argv[1], argv[2], argv[3]
     if kind not in KINDS:
         print(
             f"ERROR: unknown artifact kind {kind!r} "
@@ -116,7 +124,7 @@ def main(argv):
         print(f"ERROR: release JSON is not valid JSON: {exc}", file=sys.stderr)
         return 1
 
-    matches, all_names = select(release, kind, profile)
+    matches, all_names = select(release, kind, profile, arch)
 
     if len(matches) == 1:
         print(matches[0].get("browser_download_url", ""))

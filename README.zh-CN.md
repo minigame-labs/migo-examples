@@ -11,6 +11,7 @@
 | [`android-java/`](android-java/) | Android, Java/Kotlin SDK |
 | [`linux-cmake/`](linux-cmake/) | Linux,经 CMake 使用 C ABI |
 | [`windows-cmake/`](windows-cmake/) | Windows,经 CMake 使用 C ABI |
+| [`openharmony/`](openharmony/) | OpenHarmony,经 ArkUI XComponent 使用 C ABI |
 
 游戏内容位于 [`games/`](games/),每个游戏一个目录。一个游戏目录包含
 `game.js`(入口文件)和 `game.json`。所有宿主示例按名称运行同一份内容。
