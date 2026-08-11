@@ -33,8 +33,6 @@ static volatile LONG g_content_ready;
 static volatile LONG g_exit_requested;
 static volatile LONG g_error_seen;
 static volatile LONG g_resize_handling_enabled;
-static volatile LONG g_window_width;
-static volatile LONG g_window_height;
 
 /* The engine never calls host code directly: it hands you a task and lets you
  * decide which thread runs it. Callbacks arrive on Migo's own threads, so a
@@ -103,9 +101,14 @@ static void send_touch(MigoSession *session, MigoTouchType type, int x, int y) {
 
 /* Send a resize update to Migo with new surface metrics.
  * Resize is handled via migo_surface_update, which is non-blocking and does
- * not require detach/reattach. This keeps the message loop responsive. */
-static int handle_resize(MigoSurfaceAttachment *attachment, LONG width, LONG height) {
-    if (!attachment || width <= 0 || height <= 0) return 0;
+ * not require detach/reattach. This keeps the message loop responsive.
+ *
+ * Returns the MigoResult so the caller can tell "not right now" from a real
+ * failure: MIGO_ERROR_INVALID_STATE means a surface transition was still in
+ * flight and the same call will work shortly, while a stale surface or a
+ * rejected descriptor will never succeed however often it is repeated. */
+static MigoResult handle_resize(MigoSurfaceAttachment *attachment, LONG width, LONG height) {
+    if (!attachment || width <= 0 || height <= 0) return MIGO_OK;
 
     MigoSurfaceMetrics metrics;
     memset(&metrics, 0, sizeof metrics);
@@ -121,10 +124,10 @@ static int handle_resize(MigoSurfaceAttachment *attachment, LONG width, LONG hei
     MigoResult result = migo_surface_update(attachment, &metrics);
     if (result != MIGO_OK) {
         fprintf(stderr, "[host] resize to %ldx%ld failed: %d\n", width, height, (int)result);
-        return 1;
+        return result;
     }
     printf("[host] resized to %ldx%ld\n", width, height);
-    return 0;
+    return MIGO_OK;
 }
 
 /* Detach the surface and wait for release. Called during shutdown.
@@ -153,6 +156,9 @@ static int detach_and_await_release(MigoSurfaceAttachment *attachment) {
 
 static MigoSession *g_session;
 static MigoSurfaceAttachment *g_attachment;
+/* The newest client size WM_SIZE has seen. The window procedure only ever
+ * publishes here; the message loop owns the comparison against what Migo was
+ * last told, so a resize storm collapses into one migo_surface_update. */
 static volatile LONG g_pending_width;
 static volatile LONG g_pending_height;
 
@@ -165,10 +171,10 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPAR
         if (g_session) send_touch(g_session, MIGO_TOUCH_END, LOWORD(lparam), HIWORD(lparam));
         return 0;
     case WM_SIZE: {
-        int width = LOWORD(lparam);
-        int height = HIWORD(lparam);
-        InterlockedExchange(&g_window_width, width);
-        InterlockedExchange(&g_window_height, height);
+        /* WM_SIZE reports the new *client* size, which is exactly what the
+         * surface has to match. */
+        InterlockedExchange(&g_pending_width, LOWORD(lparam));
+        InterlockedExchange(&g_pending_height, HIWORD(lparam));
         return 0;
     }
     case WM_CLOSE:
@@ -187,12 +193,6 @@ int main(int argc, char **argv) {
     const char *content_id = (argc > 2) ? argv[2] : "demo";
     const int seconds = (argc > 3) ? atoi(argv[3]) : 15;
 
-    /* Initialize window dimensions. */
-    InterlockedExchange(&g_window_width, WINDOW_WIDTH);
-    InterlockedExchange(&g_window_height, WINDOW_HEIGHT);
-    InterlockedExchange(&g_pending_width, WINDOW_WIDTH);
-    InterlockedExchange(&g_pending_height, WINDOW_HEIGHT);
-
     /* ---- The window belongs to the host. Migo never creates one. ---- */
     HINSTANCE instance = GetModuleHandleA(NULL);
     WNDCLASSA window_class;
@@ -205,9 +205,20 @@ int main(int argc, char **argv) {
         fprintf(stderr, "[host] RegisterClass failed: %lu\n", GetLastError());
         return 1;
     }
+    /* CreateWindowEx sizes the whole frame, but Migo renders into the client
+     * area. Requesting the outer size hands the engine a surface a title bar
+     * shorter than the game asked for, which reads as content drawn at the
+     * wrong scale rather than as a host mistake. */
+    RECT frame;
+    frame.left = 0;
+    frame.top = 0;
+    frame.right = WINDOW_WIDTH;
+    frame.bottom = WINDOW_HEIGHT;
+    AdjustWindowRect(&frame, WS_OVERLAPPEDWINDOW, FALSE);
     HWND window = CreateWindowExA(0, window_class.lpszClassName, "migo windows example",
                                   WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
-                                  WINDOW_WIDTH, WINDOW_HEIGHT, NULL, NULL, instance, NULL);
+                                  frame.right - frame.left, frame.bottom - frame.top,
+                                  NULL, NULL, instance, NULL);
     if (!window) {
         fprintf(stderr, "[host] CreateWindow failed: %lu\n", GetLastError());
         return 1;
@@ -287,6 +298,28 @@ int main(int argc, char **argv) {
     win32.flags = MIGO_PLATFORM_DESCRIPTOR_FLAG_NONE;
     win32.hwnd = window;
 
+    /* Describe the client area the window actually got, not the size that was
+     * asked for: the window manager may clamp a frame that does not fit the
+     * display, and the engine renders into the client area it really has.
+     *
+     * Both dimensions must be positive to be usable. ShowWindow ignores its
+     * nCmdShow the first time a process calls it if the launcher supplied a
+     * STARTUPINFO, so a host started minimized measures 0x0 here -- and a
+     * zero-sized descriptor is rejected outright. Keep the requested size in
+     * that case and let the first WM_SIZE after restore correct it. */
+    RECT client;
+    LONG client_width = WINDOW_WIDTH;
+    LONG client_height = WINDOW_HEIGHT;
+    if (GetClientRect(window, &client) && client.right > client.left
+        && client.bottom > client.top) {
+        client_width = client.right - client.left;
+        client_height = client.bottom - client.top;
+    }
+    /* Seed the resize tracker with what Migo is about to be told, so the first
+     * loop pass does not report a resize that never happened. */
+    InterlockedExchange(&g_pending_width, client_width);
+    InterlockedExchange(&g_pending_height, client_height);
+
     MigoSurfaceDescriptor surface;
     memset(&surface, 0, sizeof surface);
     surface.struct_size = (uint32_t)sizeof surface;
@@ -294,8 +327,8 @@ int main(int argc, char **argv) {
     surface.generation = 1;
     surface.platform_kind = MIGO_PLATFORM_WIN32_HWND;
     surface.flags = MIGO_SURFACE_DESCRIPTOR_FLAG_NONE;
-    surface.width_pixels = WINDOW_WIDTH;
-    surface.height_pixels = WINDOW_HEIGHT;
+    surface.width_pixels = (uint32_t)client_width;
+    surface.height_pixels = (uint32_t)client_height;
     surface.scale_factor = SCALE_FACTOR;
     surface.color_space = MIGO_COLOR_SPACE_SRGB;
     surface.alpha_mode = MIGO_ALPHA_MODE_OPAQUE;
@@ -306,18 +339,6 @@ int main(int argc, char **argv) {
 
     result = migo_session_attach_surface(session, &surface, &g_attachment);
     if (result != MIGO_OK) return fail("migo_session_attach_surface", result);
-
-    /* Sync resize tracking with actual attached dimensions to avoid spurious resize
-     * detection caused by window system rounding or DPI adjustments. */
-    RECT rect;
-    if (GetClientRect(window, &rect)) {
-        LONG actual_width = rect.right - rect.left;
-        LONG actual_height = rect.bottom - rect.top;
-        InterlockedExchange(&g_window_width, actual_width);
-        InterlockedExchange(&g_window_height, actual_height);
-        InterlockedExchange(&g_pending_width, actual_width);
-        InterlockedExchange(&g_pending_height, actual_height);
-    }
 
     MigoContentDescriptor content;
     memset(&content, 0, sizeof content);
@@ -334,6 +355,11 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     /* ---- The host owns the message loop; Migo renders on its own thread. ---- */
+    /* What Migo was last told. Only this thread touches it, so it is a local:
+     * keeping it beside the shared pending pair is what let the two be
+     * confused for each other. */
+    LONG last_width = client_width;
+    LONG last_height = client_height;
     DWORD deadline = GetTickCount() + (DWORD)seconds * 1000;
     while (GetTickCount() < deadline && !InterlockedCompareExchange(&g_exit_requested, 0, 0)) {
         MSG message;
@@ -352,13 +378,18 @@ int main(int argc, char **argv) {
         if (InterlockedCompareExchange(&g_resize_handling_enabled, 0, 0)) {
             LONG new_width = InterlockedCompareExchange(&g_pending_width, 0, 0);
             LONG new_height = InterlockedCompareExchange(&g_pending_height, 0, 0);
-            LONG last_width = InterlockedCompareExchange(&g_window_width, 0, 0);
-            LONG last_height = InterlockedCompareExchange(&g_window_height, 0, 0);
 
             if (new_width != last_width || new_height != last_height) {
-                handle_resize(g_attachment, new_width, new_height);
-                InterlockedExchange(&g_window_width, new_width);
-                InterlockedExchange(&g_window_height, new_height);
+                /* Record the new size unless Migo asked to be called again: an
+                 * update refused mid-transition is transient, so leaving the
+                 * tracker behind retries on the next pass. Any other failure is
+                 * permanent, and retrying it forever would flood the log while
+                 * the surface stayed stale anyway. */
+                if (handle_resize(g_attachment, new_width, new_height)
+                    != MIGO_ERROR_INVALID_STATE) {
+                    last_width = new_width;
+                    last_height = new_height;
+                }
             }
         }
 

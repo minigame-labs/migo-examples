@@ -32,7 +32,6 @@ static const float SCALE_FACTOR = 1.0f;
 static atomic_int g_content_ready;
 static atomic_int g_exit_requested;
 static atomic_int g_error_seen;
-static atomic_int g_resize_pending;
 static _Atomic(int) g_pending_width;
 static _Atomic(int) g_pending_height;
 
@@ -104,9 +103,14 @@ static void send_touch(MigoSession *session, MigoTouchType type, int x, int y) {
 }
 
 /* Send a resize update to Migo with new surface metrics.
- * Resize is handled via migo_surface_update, which is non-blocking. */
-static int handle_resize(MigoSurfaceAttachment *attachment, int width, int height) {
-    if (!attachment || width <= 0 || height <= 0) return 0;
+ * Resize is handled via migo_surface_update, which is non-blocking.
+ *
+ * Returns the MigoResult so the caller can tell "not right now" from a real
+ * failure: MIGO_ERROR_INVALID_STATE means a surface transition was still in
+ * flight and the same call will work shortly, while a stale surface or a
+ * rejected descriptor will never succeed however often it is repeated. */
+static MigoResult handle_resize(MigoSurfaceAttachment *attachment, int width, int height) {
+    if (!attachment || width <= 0 || height <= 0) return MIGO_OK;
 
     MigoSurfaceMetrics metrics;
     memset(&metrics, 0, sizeof metrics);
@@ -120,10 +124,10 @@ static int handle_resize(MigoSurfaceAttachment *attachment, int width, int heigh
     MigoResult result = migo_surface_update(attachment, &metrics);
     if (result != MIGO_OK) {
         fprintf(stderr, "[host] resize to %dx%d failed: %d\n", width, height, (int)result);
-        return 1;
+        return result;
     }
     printf("[host] resized to %dx%d\n", width, height);
-    return 0;
+    return MIGO_OK;
 }
 
 /* Detach, then wait for Migo to report the surface released. */
@@ -309,11 +313,10 @@ int main(int argc, char **argv) {
                 break;
             }
             if (event.type == ConfigureNotify) {
-                int new_width = event.xconfigure.width;
-                int new_height = event.xconfigure.height;
-                atomic_store(&g_pending_width, new_width);
-                atomic_store(&g_pending_height, new_height);
-                atomic_store(&g_resize_pending, 1);
+                /* ConfigureNotify carries the new size; publishing it is all the
+                 * event handler owes the loop. */
+                atomic_store(&g_pending_width, event.xconfigure.width);
+                atomic_store(&g_pending_height, event.xconfigure.height);
             }
             if (event.type == ButtonPress && event.xbutton.button == Button1) {
                 send_touch(session, MIGO_TOUCH_START, event.xbutton.x, event.xbutton.y);
@@ -322,14 +325,23 @@ int main(int argc, char **argv) {
             }
         }
 
-        /* Process pending resize if dimensions changed. */
-        if (atomic_exchange(&g_resize_pending, 0)) {
+        /* Resize whenever the window and Migo disagree. The comparison is the
+         * whole trigger: it is idempotent, so a failed update is simply retried
+         * on the next pass instead of being lost. */
+        {
             int new_width = atomic_load(&g_pending_width);
             int new_height = atomic_load(&g_pending_height);
             if (new_width != current_width || new_height != current_height) {
-                handle_resize(attachment, new_width, new_height);
-                current_width = new_width;
-                current_height = new_height;
+                /* Record the new size unless Migo asked to be called again: an
+                 * update refused mid-transition is transient, so leaving the
+                 * tracker behind retries on the next pass. Any other failure is
+                 * permanent, and retrying it forever would flood the log while
+                 * the surface stayed stale anyway. */
+                if (handle_resize(attachment, new_width, new_height)
+                    != MIGO_ERROR_INVALID_STATE) {
+                    current_width = new_width;
+                    current_height = new_height;
+                }
             }
         }
 
