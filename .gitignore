@@ -28,3 +28,6 @@ linux-cmake/sdk/
 linux-cmake/build/
 windows-cmake/sdk/
 windows-cmake/build/
+openharmony/sdk-*/
+openharmony/entry/src/main/cpp/libs/
+openharmony/entry/src/main/cpp/migo-include/

@@ -62,6 +62,7 @@ KINDS = {
     "linux-sdk": lambda profile: (".tar.gz", ["linux", "x86_64"]),
     "windows-sdk": lambda profile: (".tar.gz", ["windows", "x86_64"]),
 }
+KINDS = {"android-aar", *STRUCTURAL_KINDS}
 
 
 def matches_trailing(name, suffix, trailing):
@@ -83,26 +84,30 @@ def matches_trailing(name, suffix, trailing):
     return len(segments) >= len(trailing) and segments[-len(trailing):] == trailing
 
 
-def select(release, kind, profile):
+def select(release, kind, profile, arch):
     """Returns (matches, all_names) for a parsed release JSON object."""
-    suffix, trailing = KINDS[kind](profile)
     assets = release.get("assets", []) or []
     all_names = [a.get("name", "") for a in assets]
-    matches = [
-        a for a in assets if matches_trailing(a.get("name", ""), suffix, trailing)
-    ]
+    if kind == "android-aar":
+        matches = [a for a in assets if a.get("name", "") == ANDROID_AAR_FILENAME]
+    else:
+        suffix, trailing = STRUCTURAL_KINDS[kind](profile, arch)
+        matches = [
+            a for a in assets if matches_trailing(a.get("name", ""), suffix, trailing)
+        ]
     return matches, all_names
 
 
 def main(argv):
-    if len(argv) != 3:
+    if len(argv) != 4:
         print(
-            "usage: select-release-asset.py <kind> <profile> < release.json",
+            "usage: select-release-asset.py <kind> <profile> <arch> < release.json",
             file=sys.stderr,
         )
+        print("  <arch> is ignored except by ohos-sdk", file=sys.stderr)
         print(f"  kinds: {', '.join(sorted(KINDS))}", file=sys.stderr)
         return 2
-    kind, profile = argv[1], argv[2]
+    kind, profile, arch = argv[1], argv[2], argv[3]
     if kind not in KINDS:
         print(
             f"ERROR: unknown artifact kind {kind!r} "
@@ -117,7 +122,7 @@ def main(argv):
         print(f"ERROR: release JSON is not valid JSON: {exc}", file=sys.stderr)
         return 1
 
-    matches, all_names = select(release, kind, profile)
+    matches, all_names = select(release, kind, profile, arch)
 
     if len(matches) == 1:
         print(matches[0].get("browser_download_url", ""))

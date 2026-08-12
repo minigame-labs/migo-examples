@@ -29,11 +29,17 @@ case "$PLATFORM" in
   android-aar) VERSION_FILE="$ROOT_DIR/migo-version.txt" ;;
   linux-sdk)   VERSION_FILE="$ROOT_DIR/migo-linux-version.txt" ;;
   windows-sdk) VERSION_FILE="$ROOT_DIR/migo-windows-version.txt" ;;
+  ohos-sdk)    VERSION_FILE="$ROOT_DIR/migo-ohos-version.txt" ;;
   *)
-    echo "ERROR: unknown platform '$PLATFORM' (supported: android-aar, linux-sdk, windows-sdk)" >&2
+    echo "ERROR: unknown platform '$PLATFORM' (supported: android-aar, linux-sdk, windows-sdk, ohos-sdk)" >&2
     exit 2
     ;;
 esac
+
+# OpenHarmony ships one tarball per architecture rather than one universal
+# package (see build-ohos-sdk.sh), so resolving it needs an arch alongside the
+# platform kind. Every other kind ignores this.
+OHOS_ARCH="${MIGO_OHOS_ARCH:-x86_64}"
 
 mkdir -p "$(dirname "$DEST")"
 
@@ -59,6 +65,21 @@ if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "linux-sdk" ]; then
   if [ ! -f "$SRC/lib/libmigo.a" ]; then
     echo "ERROR: no locally staged Linux SDK at $SRC" >&2
     echo "       build it with: bash scripts/build-linux-sdk.sh" >&2
+    exit 3
+  fi
+  rm -rf "$DEST"
+  mkdir -p "$DEST"
+  cp -a "$SRC/." "$DEST/"
+  echo "local:$(git -C "$MIGO_LOCAL_REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  exit 0
+fi
+
+if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "ohos-sdk" ]; then
+  # Same prefix-tree shape as linux-sdk/windows-sdk, one directory per arch.
+  SRC="$MIGO_LOCAL_REPO/dist/migo-ohos-$OHOS_ARCH"
+  if [ ! -f "$SRC/lib/libmigo_capi.a" ]; then
+    echo "ERROR: no locally staged OpenHarmony SDK at $SRC" >&2
+    echo "       build it with: bash scripts/build-ohos-sdk.sh $OHOS_ARCH" >&2
     exit 3
   fi
   rm -rf "$DEST"
@@ -135,7 +156,7 @@ fi
 # everything in front of it (product name, version) stays unconstrained.
 # Each AAR is multi-ABI (Gradle picks the right .so per device at build
 # time), so there is no ABI segment to match on at all.
-if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PLATFORM" "$PROFILE" < "$RELEASE_JSON")"; then
+if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PLATFORM" "$PROFILE" "$OHOS_ARCH" < "$RELEASE_JSON")"; then
   echo "ERROR: could not select a '$PLATFORM' asset from release '$TAG' of $REPO." >&2
   exit 4
 fi
@@ -165,7 +186,7 @@ if ! python3 "$ROOT_DIR/scripts/lib/verify-attestation.py" "$ASSET" "$ACTUAL_SIZ
   exit 5
 fi
 
-if [ "$PLATFORM" = "linux-sdk" ] || [ "$PLATFORM" = "windows-sdk" ]; then
+if [ "$PLATFORM" = "linux-sdk" ] || [ "$PLATFORM" = "windows-sdk" ] || [ "$PLATFORM" = "ohos-sdk" ]; then
   # The tarball carries a single top-level migo-linux-x86_64/ directory; strip it
   # so DEST itself becomes the prefix, which is what CMake and pkg-config want.
   rm -rf "$DEST"

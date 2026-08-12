@@ -12,6 +12,7 @@ Supported platforms:
 | [`android-java/`](android-java/) | Android, Java/Kotlin SDK |
 | [`linux-cmake/`](linux-cmake/) | Linux, C ABI through CMake |
 | [`windows-cmake/`](windows-cmake/) | Windows, C ABI through CMake |
+| [`openharmony/`](openharmony/) | OpenHarmony, C ABI through an ArkUI XComponent |
 
 Game content lives in [`games/`](games/), one directory per game. A game
 directory holds `game.js` (entry point) and `game.json`. Every host example
