@@ -6,24 +6,31 @@ https://api.github.com/repos/<repo>/releases/tags/<tag>) from stdin, and
 prints the `browser_download_url` of the single asset whose filename ends,
 structurally, in the trailing segments that kind is defined by:
 
-  android-aar   ".aar"     ending in [<profile>, "release"]
+  android-aar   ".aar"     ending in ["android"]
   linux-sdk     ".tar.gz"  ending in ["linux", "x86_64"]
   windows-sdk   ".tar.gz"  ending in ["windows", "x86_64"]
 
-e.g. "migo-full-release.aar" and "migo-sdk-linux-x86_64.tar.gz".
+e.g. "migo-0.9.1-android.aar" and "migo-0.9.1-capi-linux-x86_64.tar.gz".
 
 This exists so resolve-migo-artifact.sh never has to guess an asset filename
 by string concatenation: everything before the trailing profile/build-type
 segments (product name, version) is deliberately unconstrained -- that's the
 point of discovering the asset instead of guessing its whole name.
 
-There is deliberately no ABI parameter for android-aar: build-aar.sh names
-its output migo-<profile>-<build-type>.aar with no ABI segment, and the
-release workflow (release.yml) always builds with build-type "release". Each
-AAR is multi-ABI -- Gradle picks the right .so per device at build time -- so
-there is nothing for an ABI to select between at the asset level. The Linux
-SDK is the opposite: one tarball per target triple, so the target is exactly
-what its trailing segments carry.
+There is deliberately no ABI and no profile parameter for android-aar. Migo
+publishes exactly one AAR, named migo-<version>-android.aar: it is multi-ABI
+(Gradle picks the right .so per device at build time, and an integrator prunes
+with abiFilters), and the product profile is an internal build axis a consumer
+cannot choose. So "android" is the whole distinguishing tail. The Linux SDK is
+the opposite: one tarball per target, so the target is exactly what its
+trailing segments carry.
+
+The previous tail was [<profile>, "release"], matching migo-full-release.aar.
+That was Gradle's internal <profile><buildType> task name reaching consumers,
+and migo stopped publishing it -- so keying on it here would break at the next
+tag. Note the local-build path in resolve-migo-artifact.sh is unaffected:
+non-publishable AAR variants keep their descriptive names, so
+migo-<profile>-debug.aar is still what a local debug build produces.
 
 IMPORTANT -- what this selector deliberately does NOT establish: matching
 the profile/build-type tail does not prove the asset is a Migo artifact at
@@ -44,14 +51,14 @@ Exit codes:
 import json
 import sys
 
-BUILD_TYPE = "release"
-
 # Each kind maps to (filename suffix, trailing "-"-separated segments). Adding a
 # platform means adding a row here, not a second matching rule elsewhere.
 # Note: linux/windows SDK assets may be named migo-{linux,windows}-x86_64.tar.gz
 # (without "sdk") so we accept both forms.
 KINDS = {
-    "android-aar": lambda profile: (".aar", [profile, BUILD_TYPE]),
+    # `profile` is accepted and ignored, as it already is for the two SDK kinds:
+    # only the full profile is published, so it is not a selector dimension.
+    "android-aar": lambda profile: (".aar", ["android"]),
     "linux-sdk": lambda profile: (".tar.gz", ["linux", "x86_64"]),
     "windows-sdk": lambda profile: (".tar.gz", ["windows", "x86_64"]),
 }
