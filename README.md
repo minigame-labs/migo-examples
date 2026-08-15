@@ -28,6 +28,7 @@ separately:
 | `android-aar` | [`migo-version.txt`](migo-version.txt) |
 | `linux-sdk` | [`migo-linux-version.txt`](migo-linux-version.txt) |
 | `windows-sdk` | [`migo-windows-version.txt`](migo-windows-version.txt) |
+| `ohos-sdk` | [`migo-ohos-version.txt`](migo-ohos-version.txt) |
 
 ## Getting the runtime
 
@@ -61,9 +62,11 @@ Environment variables read by `resolve-migo-artifact.sh`:
 | `MIGO_PROFILE` | Product profile to resolve, in both modes (default `full`). |
 | `GITHUB_TOKEN` | Bearer token sent on GitHub API/download requests in default mode. |
 
-Platform values are `android-aar`, `linux-sdk` and `windows-sdk`. The
+Platform values are `android-aar`, `linux-sdk`, `windows-sdk` and `ohos-sdk`
+(the last also reads `MIGO_ARCH`, default `x86_64`, since OpenHarmony ships
+one tarball per architecture rather than a universal package). The
 destination differs by platform: `android-aar` writes a single `.aar` file,
-while `linux-sdk` and `windows-sdk` unpack into a prefix directory that
+while the three SDK kinds unpack into a prefix directory that
 `find_package(migo)` reads.
 
 ## Android without Gradle (NDK / C ABI)
@@ -72,8 +75,9 @@ The `android-java/` example uses the Java/Kotlin SDK. To embed Migo from native
 code instead, the same release publishes a C ABI package per ABI:
 
 ```bash
-curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.0/migo-sdk-android-arm64-v8a.tar.gz
-tar xzf migo-sdk-android-arm64-v8a.tar.gz
+# Replace v0.9.2 with the tag you want -- see the releases page for what's current.
+curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.2/migo-0.9.2-capi-android-arm64.tar.gz
+tar xzf migo-0.9.2-capi-android-arm64.tar.gz
 ```
 
 Its `README.md` carries the two CMake flags an NDK consumer must pass; without

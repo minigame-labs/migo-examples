@@ -25,6 +25,7 @@ Migo 各平台分开发布,因此每个平台钉在各自的 release 上:
 | `android-aar` | [`migo-version.txt`](migo-version.txt) |
 | `linux-sdk` | [`migo-linux-version.txt`](migo-linux-version.txt) |
 | `windows-sdk` | [`migo-windows-version.txt`](migo-windows-version.txt) |
+| `ohos-sdk` | [`migo-ohos-version.txt`](migo-ohos-version.txt) |
 
 ## 获取运行时
 
@@ -57,9 +58,10 @@ bash scripts/build-aar.sh debug --product-profile <profile>
 | `MIGO_PROFILE` | 两种模式下都生效的产品 profile(默认 `full`)。 |
 | `GITHUB_TOKEN` | 默认模式下,随 GitHub API/下载请求发送的 bearer token。 |
 
-平台取值为 `android-aar`、`linux-sdk` 和 `windows-sdk`。目标路径按平台不同:
-`android-aar` 写出单个 `.aar` 文件,`linux-sdk` 与 `windows-sdk` 解包成一个
-供 `find_package(migo)` 读取的前缀目录。
+平台取值为 `android-aar`、`linux-sdk`、`windows-sdk` 和 `ohos-sdk`(后者还会读取
+`MIGO_ARCH`,默认 `x86_64`——OpenHarmony 按架构发布一个 tarball,没有通用包)。
+目标路径按平台不同:`android-aar` 写出单个 `.aar` 文件,其余三个 SDK 平台解包成
+一个供 `find_package(migo)` 读取的前缀目录。
 
 ## 不用 Gradle 的 Android 集成(NDK / C ABI)
 
@@ -67,8 +69,9 @@ bash scripts/build-aar.sh debug --product-profile <profile>
 release 按 ABI 发布了 C ABI 包:
 
 ```bash
-curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.0/migo-sdk-android-arm64-v8a.tar.gz
-tar xzf migo-sdk-android-arm64-v8a.tar.gz
+# v0.9.2 换成你想用的 tag —— 当前有哪些见 releases 页面。
+curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.2/migo-0.9.2-capi-android-arm64.tar.gz
+tar xzf migo-0.9.2-capi-android-arm64.tar.gz
 ```
 
 包内 `README.md` 写明了 NDK 消费者必须传的两个 CMake flag;缺了它们构建会失败,
