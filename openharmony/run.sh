@@ -25,17 +25,36 @@ info() { echo -e "\033[0;36m[ohos-example] $*\033[0m"; }
 err()  { echo -e "\033[0;31m[ohos-example] $*\033[0m" >&2; }
 ok()   { echo -e "\033[0;32m[ohos-example] $*\033[0m"; }
 
+# This script's own CLI keeps the Rust-triple-style "aarch64" a real-hardware
+# user would type, but two other things downstream have their own,
+# different word for the same architecture, and neither is "aarch64":
+#   MIGO_ARCH        resolve-migo-artifact.sh / select-release-asset.py match
+#                     migo's *published* tarball names, which say "arm64"
+#                     (migo-<version>-capi-ohos-arm64.tar.gz) -- migo's own
+#                     release job iterates `arm64 x86_64`, never "aarch64".
+#   OHOS_LIB_ARCH     CMakeLists.txt's `libs/${OHOS_ARCH}/libmigo_capi.a` is
+#                     read at hvigor/CMake time, where OHOS_ARCH is set by
+#                     ohos.toolchain.cmake to "arm64-v8a" (or "x86_64"),
+#                     OpenHarmony's own ABI directory name -- the same one
+#                     Android uses, not migo's release-asset word either.
+MIGO_ARCH="$ARCH"
+OHOS_LIB_ARCH="$ARCH"
+if [ "$ARCH" = "aarch64" ]; then
+  MIGO_ARCH="arm64"
+  OHOS_LIB_ARCH="arm64-v8a"
+fi
+
 SDK="$HERE/sdk-$ARCH"
 if [ ! -f "$SDK/lib/libmigo_capi.a" ]; then
   info "resolving the Migo OpenHarmony SDK ($ARCH)"
-  MIGO_OHOS_ARCH="$ARCH" bash "$ROOT/scripts/resolve-migo-artifact.sh" ohos-sdk "$SDK"
+  MIGO_ARCH="$MIGO_ARCH" bash "$ROOT/scripts/resolve-migo-artifact.sh" ohos-sdk "$SDK"
 fi
 
 # Staged where CMakeLists.txt expects them -- same layout the SDK/engine
 # repo's own build-ohos-host.sh produces, so nothing here is example-specific.
 CPP_DIR="$HERE/entry/src/main/cpp"
-mkdir -p "$CPP_DIR/libs/$ARCH" "$CPP_DIR/migo-include"
-cp "$SDK/lib/libmigo_capi.a" "$CPP_DIR/libs/$ARCH/"
+mkdir -p "$CPP_DIR/libs/$OHOS_LIB_ARCH" "$CPP_DIR/migo-include"
+cp "$SDK/lib/libmigo_capi.a" "$CPP_DIR/libs/$OHOS_LIB_ARCH/"
 rm -rf "$CPP_DIR/migo-include/migo"
 cp -r "$SDK/include/migo" "$CPP_DIR/migo-include/"
 
