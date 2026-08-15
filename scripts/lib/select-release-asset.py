@@ -7,8 +7,9 @@ prints the `browser_download_url` of the single asset whose filename ends,
 structurally, in the trailing segments that kind is defined by:
 
   android-aar   ".aar"     ending in ["android"]
-  linux-sdk     ".tar.gz"  ending in ["linux", "x86_64"]
-  windows-sdk   ".tar.gz"  ending in ["windows", "x86_64"]
+  linux-sdk     ".tar.gz"  ending, structurally, in ["linux", <arch>]
+  windows-sdk   ".tar.gz"  ending, structurally, in ["windows", <arch>]
+  ohos-sdk      ".tar.gz"  ending, structurally, in ["ohos", <arch>]
 
 e.g. "migo-0.9.1-android.aar" and "migo-0.9.1-capi-linux-x86_64.tar.gz".
 
@@ -21,9 +22,12 @@ There is deliberately no ABI and no profile parameter for android-aar. Migo
 publishes exactly one AAR, named migo-<version>-android.aar: it is multi-ABI
 (Gradle picks the right .so per device at build time, and an integrator prunes
 with abiFilters), and the product profile is an internal build axis a consumer
-cannot choose. So "android" is the whole distinguishing tail. The Linux SDK is
-the opposite: one tarball per target, so the target is exactly what its
-trailing segments carry.
+cannot choose. So "android" is the whole distinguishing tail. The other three
+kinds are the opposite: one tarball per (platform, arch), so arch is exactly
+what their trailing segments carry -- ohos-sdk always shipped this way (no fat
+package across arm64/x86_64; see build-ohos-sdk.sh), and linux-sdk/windows-sdk
+joined it once their release jobs started publishing an arm64 tarball
+alongside x86_64.
 
 The previous tail was [<profile>, "release"], matching migo-full-release.aar.
 That was Gradle's internal <profile><buildType> task name reaching consumers,
@@ -53,16 +57,17 @@ import sys
 
 # Each kind maps to (filename suffix, trailing "-"-separated segments). Adding a
 # platform means adding a row here, not a second matching rule elsewhere.
-# Note: linux/windows SDK assets may be named migo-{linux,windows}-x86_64.tar.gz
-# (without "sdk") so we accept both forms.
-KINDS = {
-    # `profile` is accepted and ignored, as it already is for the two SDK kinds:
-    # only the full profile is published, so it is not a selector dimension.
-    "android-aar": lambda profile: (".aar", ["android"]),
-    "linux-sdk": lambda profile: (".tar.gz", ["linux", "x86_64"]),
-    "windows-sdk": lambda profile: (".tar.gz", ["windows", "x86_64"]),
+# `profile` is accepted and ignored by every kind: only the full profile is
+# published, so it is not a selector dimension. `arch` is likewise accepted and
+# ignored by android-aar (one multi-ABI AAR), but is the whole point for the
+# other three: each publishes one tarball per (platform, arch).
+STRUCTURAL_KINDS = {
+    "android-aar": lambda profile, arch: (".aar", ["android"]),
+    "linux-sdk": lambda profile, arch: (".tar.gz", ["linux", arch]),
+    "windows-sdk": lambda profile, arch: (".tar.gz", ["windows", arch]),
+    "ohos-sdk": lambda profile, arch: (".tar.gz", ["ohos", arch]),
 }
-KINDS = {"android-aar", *STRUCTURAL_KINDS}
+KINDS = set(STRUCTURAL_KINDS)
 
 
 def matches_trailing(name, suffix, trailing):
@@ -88,13 +93,10 @@ def select(release, kind, profile, arch):
     """Returns (matches, all_names) for a parsed release JSON object."""
     assets = release.get("assets", []) or []
     all_names = [a.get("name", "") for a in assets]
-    if kind == "android-aar":
-        matches = [a for a in assets if a.get("name", "") == ANDROID_AAR_FILENAME]
-    else:
-        suffix, trailing = STRUCTURAL_KINDS[kind](profile, arch)
-        matches = [
-            a for a in assets if matches_trailing(a.get("name", ""), suffix, trailing)
-        ]
+    suffix, trailing = STRUCTURAL_KINDS[kind](profile, arch)
+    matches = [
+        a for a in assets if matches_trailing(a.get("name", ""), suffix, trailing)
+    ]
     return matches, all_names
 
 
@@ -104,7 +106,7 @@ def main(argv):
             "usage: select-release-asset.py <kind> <profile> <arch> < release.json",
             file=sys.stderr,
         )
-        print("  <arch> is ignored except by ohos-sdk", file=sys.stderr)
+        print("  <arch> is ignored except by linux-sdk/windows-sdk/ohos-sdk", file=sys.stderr)
         print(f"  kinds: {', '.join(sorted(KINDS))}", file=sys.stderr)
         return 2
     kind, profile, arch = argv[1], argv[2], argv[3]

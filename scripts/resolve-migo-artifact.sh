@@ -36,15 +36,16 @@ case "$PLATFORM" in
     ;;
 esac
 
-# OpenHarmony ships one tarball per architecture rather than one universal
-# package (see build-ohos-sdk.sh), so resolving it needs an arch alongside the
-# platform kind. Every other kind ignores this.
-OHOS_ARCH="${MIGO_OHOS_ARCH:-x86_64}"
+# linux-sdk, windows-sdk and ohos-sdk each ship one tarball per architecture
+# rather than one universal package (see build-{linux,windows,ohos}-sdk.sh),
+# so resolving any of them needs an arch alongside the platform kind.
+# android-aar ignores this: it is multi-ABI, Gradle picks the right .so.
+ARCH="${MIGO_ARCH:-x86_64}"
 
 mkdir -p "$(dirname "$DEST")"
 
 if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "windows-sdk" ]; then
-  SRC="$MIGO_LOCAL_REPO/dist/migo-windows-x86_64"
+  SRC="$MIGO_LOCAL_REPO/dist/migo-windows-$ARCH"
   if [ ! -f "$SRC/bin/migo.dll" ]; then
     echo "ERROR: no locally staged Windows SDK at $SRC" >&2
     echo "       build it with: bash scripts/build-windows-sdk.sh" >&2
@@ -61,7 +62,7 @@ if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "linux-sdk" ]; then
   # The Linux SDK is a prefix tree, not a single file: build-linux-sdk.sh stages
   # it under dist/ and consumers point CMake or pkg-config at that prefix. So
   # DEST is a directory here, mirroring what the download path below unpacks.
-  SRC="$MIGO_LOCAL_REPO/dist/migo-linux-x86_64"
+  SRC="$MIGO_LOCAL_REPO/dist/migo-linux-$ARCH"
   if [ ! -f "$SRC/lib/libmigo.a" ]; then
     echo "ERROR: no locally staged Linux SDK at $SRC" >&2
     echo "       build it with: bash scripts/build-linux-sdk.sh" >&2
@@ -76,10 +77,10 @@ fi
 
 if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "ohos-sdk" ]; then
   # Same prefix-tree shape as linux-sdk/windows-sdk, one directory per arch.
-  SRC="$MIGO_LOCAL_REPO/dist/migo-ohos-$OHOS_ARCH"
+  SRC="$MIGO_LOCAL_REPO/dist/migo-ohos-$ARCH"
   if [ ! -f "$SRC/lib/libmigo_capi.a" ]; then
     echo "ERROR: no locally staged OpenHarmony SDK at $SRC" >&2
-    echo "       build it with: bash scripts/build-ohos-sdk.sh $OHOS_ARCH" >&2
+    echo "       build it with: bash scripts/build-ohos-sdk.sh $ARCH" >&2
     exit 3
   fi
   rm -rf "$DEST"
@@ -149,14 +150,11 @@ if ! curl -fsSL "${AUTH_HEADER[@]}" "$RELEASE_API" -o "$RELEASE_JSON"; then
   exit 4
 fi
 
-# Discover the asset instead of guessing its filename by concatenation:
-# build-aar.sh names its output migo-<profile>-<build-type>.aar, and the
-# release workflow always builds with build-type "release" (see
-# release.yml). Discovery only pins that trailing profile/build-type tail;
-# everything in front of it (product name, version) stays unconstrained.
-# Each AAR is multi-ABI (Gradle picks the right .so per device at build
-# time), so there is no ABI segment to match on at all.
-if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PLATFORM" "$PROFILE" "$OHOS_ARCH" < "$RELEASE_JSON")"; then
+# Discover the asset instead of guessing its filename by concatenation: see
+# select-release-asset.py's own header for the trailing-segment rule each
+# platform kind matches on. Everything in front of that tail (product name,
+# version) stays unconstrained.
+if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PLATFORM" "$PROFILE" "$ARCH" < "$RELEASE_JSON")"; then
   echo "ERROR: could not select a '$PLATFORM' asset from release '$TAG' of $REPO." >&2
   exit 4
 fi
