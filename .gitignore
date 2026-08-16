@@ -19,6 +19,9 @@ local.properties
 .DS_Store
 Thumbs.db
 
+# Local agent/session state (never intended for the repo)
+.claude/
+
 # Python
 __pycache__/
 *.pyc

@@ -83,6 +83,11 @@ tar xzf migo-0.9.2-capi-android-arm64.tar.gz
 Its `README.md` carries the two CMake flags an NDK consumer must pass; without
 them the build fails with errors that point somewhere other than the cause.
 
+## Contact
+
+- Commercial licensing: licensing@minigame-labs.com
+- Security reports: see [SECURITY.md](SECURITY.md)
+
 ## Licence
 
 See [LICENSE](LICENSE).
