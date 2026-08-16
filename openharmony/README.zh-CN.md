@@ -48,7 +48,6 @@ WSL 里。`run.sh` 处理了由此而来的两件事,都是踩过坑才知道的
 
 | 步骤 | 位置 |
 |---|---|
-| 询问链接到的库支持什么 | `migo_query_capabilities` |
 | 创建 engine 与 session | `migo_engine_create`、`migo_session_create` |
 | 用自己的 dispatcher 安装宿主回调 | `migo_session_set_host_callbacks` |
 | 交出 XComponent 的原生窗口 | `MigoOpenHarmonyNativeWindowDescriptor` + `migo_session_attach_surface` |

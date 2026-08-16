@@ -60,13 +60,15 @@ Environment variables read by `resolve-migo-artifact.sh`:
 |---|---|
 | `MIGO_LOCAL_REPO` | Path to a local Migo checkout; switches to local mode. |
 | `MIGO_PROFILE` | Product profile to resolve, in both modes (default `full`). |
+| `MIGO_ARCH` | Architecture to resolve, for `linux-sdk`, `windows-sdk` and `ohos-sdk` (default `x86_64`); ignored by `android-aar`. |
 | `GITHUB_TOKEN` | Bearer token sent on GitHub API/download requests in default mode. |
 
-Platform values are `android-aar`, `linux-sdk`, `windows-sdk` and `ohos-sdk`
-(the last also reads `MIGO_ARCH`, default `x86_64`, since OpenHarmony ships
-one tarball per architecture rather than a universal package). The
-destination differs by platform: `android-aar` writes a single `.aar` file,
-while the three SDK kinds unpack into a prefix directory that
+Platform values are `android-aar`, `linux-sdk`, `windows-sdk` and `ohos-sdk`.
+The three SDK kinds each ship one tarball per architecture rather than a
+universal package, which is what `MIGO_ARCH` selects between; `android-aar`
+ignores it, since the AAR is multi-ABI and Gradle picks the right `.so` per
+device. The destination differs by platform: `android-aar` writes a single
+`.aar` file, while the three SDK kinds unpack into a prefix directory that
 `find_package(migo)` reads.
 
 ## Android without Gradle (NDK / C ABI)
