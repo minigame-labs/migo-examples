@@ -1,5 +1,5 @@
 // Simple solid color test
-const canvas = wx.createCanvas();
+const canvas = migo.createCanvas();
 const ctx = canvas.getContext('2d');
 
 ctx.fillStyle = '#ff0000';  // Red

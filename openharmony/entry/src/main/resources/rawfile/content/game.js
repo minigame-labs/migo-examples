@@ -5,7 +5,7 @@
 //     is driving requestAnimationFrame and painting;
 //   - the background changes colour on touch, so a colour change means input
 //     crossed the host boundary and reached JS.
-const canvas = wx.createCanvas();
+const canvas = migo.createCanvas();
 const ctx = canvas.getContext('2d');
 
 const IDLE = '#101828';
@@ -15,7 +15,7 @@ let background = IDLE;
 let touches = 0;
 let frames = 0;
 
-wx.onTouchStart(function (e) {
+migo.onTouchStart(function (e) {
   touches = ((e && e.touches) || []).length;
   background = TOUCHED;
 });
@@ -25,12 +25,12 @@ function onTouchEnd() {
   background = IDLE;
 }
 
-wx.onTouchEnd(onTouchEnd);
+migo.onTouchEnd(onTouchEnd);
 // A cancelled gesture (finger leaves the surface, a system gesture takes
 // over) never fires onTouchEnd. Without this, a cancel would leave the
 // background stuck green -- a false pass for a probe whose only job is to
 // show that input reached JS right now.
-wx.onTouchCancel(onTouchEnd);
+migo.onTouchCancel(onTouchEnd);
 
 function paint() {
   frames += 1;

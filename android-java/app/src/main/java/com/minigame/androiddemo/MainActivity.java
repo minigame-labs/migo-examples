@@ -32,11 +32,6 @@ public class MainActivity extends Activity {
     private static final String GAME_ID = "demo";
     private static final String GAME_ENTRY = "game.js";
 
-    // Auth relay URL used by demo AuthHandler proxy.
-    // - Emulator:    http://10.0.2.2:9527
-    // - Real device: http://<PC_LAN_IP>:9527
-    private static final String AUTH_RELAY_URL = "http://10.0.2.2:9527";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -98,7 +93,7 @@ public class MainActivity extends Activity {
                 ;
         RuntimeConfigCompat.injectFromGameConfig(builder, GameConfigLoader.load(this, GAME_ID));
         RuntimeConfig config = builder.build();
-        DebugMigoGameActivity.launch(this, GAME_ID, GAME_ENTRY, config, AUTH_RELAY_URL);
+        DebugMigoGameActivity.launch(this, GAME_ID, GAME_ENTRY, config);
     }
 
     /**
@@ -106,7 +101,6 @@ public class MainActivity extends Activity {
      */
     private void launchEmbeddedView() {
         Intent intent = new Intent(this, EmbeddedGameActivity.class);
-        intent.putExtra(EmbeddedGameActivity.EXTRA_AUTH_RELAY_URL, AUTH_RELAY_URL);
         startActivity(intent);
     }
 
