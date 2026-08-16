@@ -64,7 +64,7 @@ jobs:
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq libx11-dev cmake xvfb libgl1 libegl1
+          sudo apt-get install -y -qq libx11-dev cmake xvfb libgl1 libegl1 libgl1-mesa-dri
 
       # The Linux example resolves the published SDK the same way run.sh does
       # on a developer machine -- see linux-cmake/run.sh, which calls
@@ -72,6 +72,14 @@ jobs:
       # toolchain is needed here; that path is for building the SDK itself,
       # which is migo's job, not this example's.
       - name: Build and run Linux example
+        # Xvfb has no real GPU, so a DRI3 hardware-device lookup under it is a
+        # race that sometimes loses ("Could not get DRI3 device" -> the render
+        # thread never publishes GPU caps -> attach_surface fails -> segfault;
+        # seen twice in this session alone). Forcing Mesa's llvmpipe software
+        # rasterizer skips that lookup entirely instead of hoping it resolves.
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          GALLIUM_DRIVER: llvmpipe
         run: |
           xvfb-run -a --server-args="-screen 0 720x1280x24" \
             bash linux-cmake/run.sh demo 8 2>&1 | tee /tmp/linux-example.log
