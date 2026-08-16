@@ -77,6 +77,11 @@ tar xzf migo-0.9.2-capi-android-arm64.tar.gz
 包内 `README.md` 写明了 NDK 消费者必须传的两个 CMake flag;缺了它们构建会失败,
 而报错指向的位置与真正的原因无关。
 
+## 联系方式
+
+- 商业授权:licensing@minigame-labs.com
+- 安全问题:见 [SECURITY.md](SECURITY.md)
+
 ## 许可证
 
 见 [LICENSE](LICENSE)。
