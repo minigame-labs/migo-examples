@@ -14,7 +14,7 @@ import com.migo.runtime.MigoException;
 import com.migo.runtime.MigoGameView;
 import com.migo.runtime.RuntimeConfig;
 import com.migo.runtime.callback.GameSessionListener;
-import com.minigame.androiddemo.auth.ProxyAuthHandler;
+import com.minigame.androiddemo.auth.MockAuthHandler;
 
 /**
  * Demo Activity showing how to embed a game using MigoGameView.
@@ -32,22 +32,12 @@ public class EmbeddedGameActivity extends Activity {
 
     private static final String GAME_ID = "migo-test-suit";
     private static final String GAME_ENTRY = "game.js";
-    public static final String EXTRA_AUTH_RELAY_URL = "auth_relay_url";
-
-    // Auth proxy relay server URL
-    private static final String DEFAULT_AUTH_RELAY_URL = "http://10.0.2.2:9527";
 
     private MigoGameView gameView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        String relayUrl = getIntent().getStringExtra(EXTRA_AUTH_RELAY_URL);
-        if (relayUrl == null || relayUrl.trim().isEmpty()) {
-            relayUrl = DEFAULT_AUTH_RELAY_URL;
-        }
-        final String finalRelayUrl = relayUrl;
 
         // Root layout: vertical - title bar on top, game view below
         LinearLayout root = new LinearLayout(this);
@@ -101,8 +91,8 @@ public class EmbeddedGameActivity extends Activity {
             public void onSessionCreated(GameSession session) {
                 session.setGameLogHandler(new DemoGameLogHandler());
                 session.setSubpackageHandler(new DemoSubpackageHandler(session.getPaths().getCodeDir()));
-                session.setAuthHandler(new ProxyAuthHandler(finalRelayUrl, GAME_ID));
-                Log.i(TAG, "Host handlers registered: auth/gameLog/subpackage, relay=" + finalRelayUrl);
+                session.setAuthHandler(new MockAuthHandler());
+                Log.i(TAG, "Host handlers registered: auth/gameLog/subpackage");
             }
         });
 

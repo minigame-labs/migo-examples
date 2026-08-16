@@ -12,7 +12,7 @@ import com.migo.runtime.MigoGameActivity;
 import com.migo.runtime.RuntimeConfig;
 import com.migo.runtime.SessionState;
 import com.migo.runtime.callback.GameSessionListener;
-import com.minigame.androiddemo.auth.ProxyAuthHandler;
+import com.minigame.androiddemo.auth.MockAuthHandler;
 
 /**
  * Diagnostic wrapper for MigoGameActivity.
@@ -25,23 +25,10 @@ import com.minigame.androiddemo.auth.ProxyAuthHandler;
 public class DebugMigoGameActivity extends MigoGameActivity {
 
     private static final String TAG = "DebugMigoGameAct";
-    public static final String EXTRA_AUTH_RELAY_URL = "auth_relay_url";
-    private static final String DEFAULT_AUTH_RELAY_URL = "http://10.0.2.2:9527";
 
-    private String relayUrl = DEFAULT_AUTH_RELAY_URL;
     private String gameId = "";
 
     public static void launch(Context context, String gameId, String entryPoint, RuntimeConfig config) {
-        launch(context, gameId, entryPoint, config, DEFAULT_AUTH_RELAY_URL);
-    }
-
-    public static void launch(
-            Context context,
-            String gameId,
-            String entryPoint,
-            RuntimeConfig config,
-            String relayUrl
-    ) {
         Intent intent = buildLaunchIntent(
                 context,
                 DebugMigoGameActivity.class,
@@ -49,9 +36,6 @@ public class DebugMigoGameActivity extends MigoGameActivity {
                 entryPoint,
                 config
         );
-        if (relayUrl != null && !relayUrl.trim().isEmpty()) {
-            intent.putExtra(EXTRA_AUTH_RELAY_URL, relayUrl.trim());
-        }
         context.startActivity(intent);
     }
 
@@ -60,17 +44,12 @@ public class DebugMigoGameActivity extends MigoGameActivity {
         super.onCreate(savedInstanceState);
         gameId = getIntent().getStringExtra(EXTRA_GAME_ID);
         String entryPoint = getIntent().getStringExtra(EXTRA_ENTRY_POINT);
-        String relay = getIntent().getStringExtra(EXTRA_AUTH_RELAY_URL);
-        if (relay != null && !relay.trim().isEmpty()) {
-            relayUrl = relay.trim();
-        }
         Log.i(TAG, "onCreate gameId=" + gameId + ", entryPoint=" + entryPoint);
-        Log.i(TAG, "auth relay=" + relayUrl);
     }
 
     @Override
     protected void onSessionCreated(GameSession session) {
-        session.setAuthHandler(new ProxyAuthHandler(relayUrl, gameId));
+        session.setAuthHandler(new MockAuthHandler());
         session.setGameLogHandler(new DemoGameLogHandler());
         session.setSubpackageHandler(new DemoSubpackageHandler(session.getPaths().getCodeDir()));
         Log.i(TAG, "Host handlers registered: auth/gameLog/subpackage");
