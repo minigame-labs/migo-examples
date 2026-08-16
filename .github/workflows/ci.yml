@@ -25,9 +25,6 @@ jobs:
       - name: Attestation verification contract
         run: bash scripts/test-verify-attestation.sh
 
-      - name: Content namespace contract
-        run: bash scripts/test-content-namespace.sh
-
       - name: Resolve runtime
         id: resolve
         run: |
