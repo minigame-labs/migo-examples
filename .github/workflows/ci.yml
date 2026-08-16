@@ -84,3 +84,49 @@ jobs:
             || { echo "::error::the example never reported content ready"; exit 1; }
           grep -q "\[host\] done" /tmp/linux-example.log \
             || { echo "::error::the example did not shut down cleanly"; exit 1; }
+
+  build-windows:
+    # Compile-only, same trust level as the Android job above (no run step
+    # yet -- the example opens a real HWND and renders through ANGLE, which
+    # needs verifying against a GPU-capable or WARP-fallback runner before
+    # it's trusted as a pass/fail gate). Still a real improvement: this
+    # platform had zero CI coverage before.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve runtime
+        id: resolve
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          bash scripts/resolve-migo-artifact.sh windows-sdk windows-cmake/sdk
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+
+      # Same exit-code contract as the Android job's resolve step: 4 means
+      # "no release published for this platform yet", anything else nonzero
+      # is a real regression.
+      - name: Skip reason (no runtime release published)
+        if: steps.resolve.outputs.status == '4'
+        shell: bash
+        run: |
+          echo "::notice::Windows build skipped: resolve-migo-artifact.sh exited 4 (no migo runtime release is published yet for windows-sdk)."
+
+      - name: Fail on resolver regression
+        if: steps.resolve.outputs.status != '0' && steps.resolve.outputs.status != '4'
+        shell: bash
+        run: |
+          echo "::error::resolve-migo-artifact.sh exited ${{ steps.resolve.outputs.status }}, which is neither success (0) nor the documented no-release-available case (4). Treating this as a real resolver regression, not a skip."
+          exit 1
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: steps.resolve.outputs.status == '0'
+
+      - name: Build Windows example
+        if: steps.resolve.outputs.status == '0'
+        shell: cmd
+        run: |
+          cmake -S windows-cmake -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%CD%\windows-cmake\sdk"
+          cmake --build build
