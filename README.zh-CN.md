@@ -56,12 +56,14 @@ bash scripts/build-aar.sh debug --product-profile <profile>
 |---|---|
 | `MIGO_LOCAL_REPO` | 本地 Migo 检出路径;设置后切换到本地模式。 |
 | `MIGO_PROFILE` | 两种模式下都生效的产品 profile(默认 `full`)。 |
+| `MIGO_ARCH` | 为 `linux-sdk`、`windows-sdk` 和 `ohos-sdk` 选择的架构(默认 `x86_64`);`android-aar` 忽略此变量。 |
 | `GITHUB_TOKEN` | 默认模式下,随 GitHub API/下载请求发送的 bearer token。 |
 
-平台取值为 `android-aar`、`linux-sdk`、`windows-sdk` 和 `ohos-sdk`(后者还会读取
-`MIGO_ARCH`,默认 `x86_64`——OpenHarmony 按架构发布一个 tarball,没有通用包)。
-目标路径按平台不同:`android-aar` 写出单个 `.aar` 文件,其余三个 SDK 平台解包成
-一个供 `find_package(migo)` 读取的前缀目录。
+平台取值为 `android-aar`、`linux-sdk`、`windows-sdk` 和 `ohos-sdk`。三个 SDK
+平台各自按架构发布一个 tarball,没有通用包,`MIGO_ARCH` 就是在其中做选择;
+`android-aar` 会忽略它,因为该 AAR 是多 ABI 的,由 Gradle 在设备上挑选对应的
+`.so`。目标路径按平台不同:`android-aar` 写出单个 `.aar` 文件,其余三个 SDK
+平台解包成一个供 `find_package(migo)` 读取的前缀目录。
 
 ## 不用 Gradle 的 Android 集成(NDK / C ABI)
 
@@ -80,7 +82,7 @@ tar xzf migo-0.9.2-capi-android-arm64.tar.gz
 ## 联系方式
 
 - 商业授权:licensing@minigame-labs.com
-- 安全问题:见 [SECURITY.md](SECURITY.md)
+- 安全问题:见 [SECURITY.zh-CN.md](SECURITY.zh-CN.md)
 
 ## 许可证
 

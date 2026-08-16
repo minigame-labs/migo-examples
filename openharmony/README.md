@@ -53,7 +53,6 @@ Set `DEVECO_HOME` if DevEco Studio isn't at the default
 
 | Step | Where |
 |---|---|
-| Query what the linked library supports | `migo_query_capabilities` |
 | Create engine and session | `migo_engine_create`, `migo_session_create` |
 | Install host callbacks with your own dispatcher | `migo_session_set_host_callbacks` |
 | Hand over the XComponent's native window | `MigoOpenHarmonyNativeWindowDescriptor` + `migo_session_attach_surface` |
