@@ -11,6 +11,13 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import com.migo.runtime.MigoRuntime;
 import com.migo.runtime.RuntimeConfig;
@@ -18,10 +25,12 @@ import com.migo.runtime.RuntimeConfig;
 /**
  * Demo launcher Activity.
  * <p>
- * Shows two integration approaches:
+ * Shows three integration approaches:
  * <ol>
  *   <li><b>MigoGameActivity</b> - Zero-boilerplate, launch with one line</li>
  *   <li><b>MigoGameView</b> - Embed a game inside any layout</li>
+ *   <li><b>Adapter injection</b> - Run unmodified wx-shaped content via a boot
+ *       prelude script, no engine change and no edits to the game's own source</li>
  * </ol>
  */
 public class MainActivity extends Activity {
@@ -31,6 +40,11 @@ public class MainActivity extends Activity {
     // Game configuration
     private static final String GAME_ID = "demo";
     private static final String GAME_ENTRY = "game.js";
+
+    // Adapter-injection demo: unmodified wx-shaped content, deployed separately
+    // via `scripts/push-game.sh wx-adapter-demo` (see android-java/README.md).
+    private static final String WX_DEMO_GAME_ID = "wx-adapter-demo";
+    private static final String WX_ADAPTER_ASSET = "migo-wx-adapter.bundle.js";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,10 +88,15 @@ public class MainActivity extends Activity {
         Button btn2 = createButton("2. Embedded MigoGameView (+Handlers)");
         btn2.setOnClickListener(v -> launchEmbeddedView());
 
+        // Option 3: adapter injection running unmodified wx-shaped content
+        Button btn3 = createButton("3. Adapter Injection (unmodified wx game)");
+        btn3.setOnClickListener(v -> launchWithWxAdapter());
+
         root.addView(title);
         root.addView(version);
         root.addView(btn1, buttonParams());
         root.addView(btn2, buttonParams());
+        root.addView(btn3, buttonParams());
 
         setContentView(root);
     }
@@ -104,7 +123,48 @@ public class MainActivity extends Activity {
         startActivity(intent);
     }
 
+    /**
+     * Option 3: run unmodified wx-shaped content by injecting the
+     * migo-wx-adapter bundle as a boot prelude script -- no engine change,
+     * no edits to the game's own source. {@code games/wx-adapter-demo/game.js}
+     * is a real, previously-shipped wx.* file (this demo's own source before
+     * migo dropped its built-in wx mirror); it must be deployed separately
+     * with {@code android-java/scripts/push-game.sh wx-adapter-demo}, the
+     * same way {@code demo} is.
+     */
+    private void launchWithWxAdapter() {
+        String adapterSource;
+        try {
+            adapterSource = readAsset(WX_ADAPTER_ASSET);
+        } catch (IOException e) {
+            Log.e(TAG, "failed to read " + WX_ADAPTER_ASSET, e);
+            Toast.makeText(this, "missing " + WX_ADAPTER_ASSET + " in assets/", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        RuntimeConfig.Builder builder = new RuntimeConfig.Builder(this)
+                .setDebugEnabled(true)
+                .setCodeSigningEnabled(false)
+                .addPreludeScript(WX_ADAPTER_ASSET, adapterSource);
+        RuntimeConfigCompat.injectFromGameConfig(builder, GameConfigLoader.load(this, WX_DEMO_GAME_ID));
+        RuntimeConfig config = builder.build();
+        DebugMigoGameActivity.launch(this, WX_DEMO_GAME_ID, GAME_ENTRY, config);
+    }
+
     // ---- Helpers ----
+
+    private String readAsset(String name) throws IOException {
+        StringBuilder out = new StringBuilder();
+        try (InputStream in = getAssets().open(name);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+            char[] buf = new char[8192];
+            int n;
+            while ((n = reader.read(buf)) >= 0) {
+                out.append(buf, 0, n);
+            }
+        }
+        return out.toString();
+    }
 
     private void requestPermissionsIfNeeded() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {

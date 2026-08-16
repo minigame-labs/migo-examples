@@ -42,6 +42,37 @@ A game directory holds `game.js` (entry point) and `game.json`.
 | `MigoGameActivity` | `app/src/main/java/com/minigame/androiddemo/DebugMigoGameActivity.java` |
 | `MigoGameView` | `app/src/main/java/com/minigame/androiddemo/EmbeddedGameActivity.java` |
 
+### Option 3: adapter injection (unmodified wx-shaped content)
+
+`MainActivity`'s third button runs [`games/wx-adapter-demo/game.js`](../games/wx-adapter-demo/game.js)
+unmodified — it calls `wx.createCanvas()`, `wx.onTouchStart()`, and so on directly,
+with no `migo.*` anywhere in the file. Migo itself only ever installs `migo.*`;
+`wx` is supplied at boot by injecting the
+[migo-wx-adapter](https://github.com/minigame-labs/migo-wx-adapter) IIFE bundle
+as a prelude script:
+
+```java
+String adapterSource = readAsset("migo-wx-adapter.bundle.js"); // app/src/main/assets/
+RuntimeConfig config = new RuntimeConfig.Builder(this)
+        .addPreludeScript("migo-wx-adapter.bundle.js", adapterSource)
+        .build();
+DebugMigoGameActivity.launch(this, "wx-adapter-demo", "game.js", config);
+```
+
+`app/src/main/assets/migo-wx-adapter.bundle.js` is a committed build of that
+adapter (`npm run build` in a `migo-wx-adapter` checkout, then copy
+`dist/migo-wx-adapter.bundle.js` here) — the Android build has no Node
+toolchain wired in to build it on the fly. Deploy the demo content the same
+way as `demo`, under its own game id:
+
+```bash
+bash scripts/push-game.sh wx-adapter-demo
+```
+
+This is the shape a real integration takes: a game centre distributing
+third-party mini-game packages unmodified injects the adapter that matches
+what the content expects, rather than porting every title to `migo.*` by hand.
+
 Standalone snippets demonstrating direct `GameSession` / `MigoRuntime`
 integration, without either wrapper class, live in
 [`snippets/`](snippets/): `MinimalActivity.java`, `GameActivity.java`, and
