@@ -86,11 +86,6 @@ jobs:
             || { echo "::error::the example did not shut down cleanly"; exit 1; }
 
   build-windows:
-    # Compile-only, same trust level as the Android job above (no run step
-    # yet -- the example opens a real HWND and renders through ANGLE, which
-    # needs verifying against a GPU-capable or WARP-fallback runner before
-    # it's trusted as a pass/fail gate). Still a real improvement: this
-    # platform had zero CI coverage before.
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,3 +125,23 @@ jobs:
         run: |
           cmake -S windows-cmake -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%CD%\windows-cmake\sdk"
           cmake --build build
+
+      # Same fair-comparison bar as the Linux job: don't just build, actually
+      # run it and grep the log for content-ready + clean shutdown. Stages
+      # the demo content the same way windows-cmake/run.sh does for a
+      # developer machine.
+      - name: Run Windows example
+        if: steps.resolve.outputs.status == '0'
+        shell: bash
+        run: |
+          rm -rf windows-cmake/files
+          mkdir -p windows-cmake/files/migo/games/demo/code
+          cp games/demo/game.js games/demo/game.json windows-cmake/files/migo/games/demo/code/
+          FILES_DIR_WIN="$(cygpath -w "$PWD/windows-cmake/files")"
+
+          build/migo-windows-example.exe "$FILES_DIR_WIN" demo 8 2>&1 | tee /tmp/windows-example.log
+
+          grep -q "content is ready" /tmp/windows-example.log \
+            || { echo "::error::the example never reported content ready"; exit 1; }
+          grep -q "\[host\] done" /tmp/windows-example.log \
+            || { echo "::error::the example did not shut down cleanly"; exit 1; }
