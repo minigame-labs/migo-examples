@@ -21,6 +21,13 @@ bash run.sh demo 30
 bash run.sh /path/to/your-game 30
 ```
 
+Not every directory under `../games/` runs here.
+[`wx-adapter-demo`](../games/wx-adapter-demo/) is content written against `wx.*`
+and needs the host to install an adapter as a prelude script; the C ABI this
+example is built on has no way to do that, so it stops with `ReferenceError: wx
+is not defined`. Its [README](../games/wx-adapter-demo/README.md) explains what
+runs it and what C ABI hosts can do instead.
+
 ## Build only
 
 ```bash
