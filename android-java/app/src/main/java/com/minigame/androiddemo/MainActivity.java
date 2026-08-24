@@ -99,6 +99,36 @@ public class MainActivity extends Activity {
         root.addView(btn3, buttonParams());
 
         setContentView(root);
+
+        // Headless entry, for tooling that has to drive this host without a
+        // human to tap a button:
+        //
+        //   adb shell am start -n com.minigame.androiddemo/.MainActivity \
+        //       --es gameId <slot> [--es entry game.js]
+        //
+        // Migo's own prescreen runner (scripts/prescreen-run.sh in the engine
+        // repo) deploys a bundle into <files>/migo/games/<slot>/code and then
+        // needs the host to actually open it. Without this, `am start` lands on
+        // the menu above -- and a menu screenshot looks exactly as alive as a
+        // running game, which is how a report ends up saying a bundle runs when
+        // it was never loaded. The extra is read once, on the launching intent,
+        // so a normal tap-through is unaffected.
+        String requestedGame = getIntent() == null ? null : getIntent().getStringExtra("gameId");
+        if (requestedGame != null && !requestedGame.trim().isEmpty()) {
+            String entry = getIntent().getStringExtra("entry");
+            launchGameById(requestedGame.trim(), entry == null || entry.trim().isEmpty()
+                    ? GAME_ENTRY : entry.trim());
+        }
+    }
+
+    /** Open a game by its slot id, bypassing the menu. See the headless entry above. */
+    private void launchGameById(String gameId, String entry) {
+        RuntimeConfig.Builder builder = new RuntimeConfig.Builder(this)
+                .setDebugEnabled(true)
+                .setCodeSigningEnabled(false)
+                ;
+        RuntimeConfigCompat.injectFromGameConfig(builder, GameConfigLoader.load(this, gameId));
+        DebugMigoGameActivity.launch(this, gameId, entry, builder.build());
     }
 
     /**
