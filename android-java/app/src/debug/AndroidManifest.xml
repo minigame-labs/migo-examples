@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only. `PrescreenProbeActivity` is exported so `adb shell am start` can
+  reach it; nothing else in this app is, and nothing here reaches a release
+  build. See the activity's own comment for why the export is quarantined into
+  a separate class instead of being added to DebugMigoGameActivity.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name=".PrescreenProbeActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+    </application>
+</manifest>
