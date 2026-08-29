@@ -71,9 +71,9 @@ bash scripts/build-aar.sh debug --product-profile <profile>
 release 按 ABI 发布了 C ABI 包:
 
 ```bash
-# v0.9.2 换成你想用的 tag —— 当前有哪些见 releases 页面。
-curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.2/migo-0.9.2-capi-android-arm64.tar.gz
-tar xzf migo-0.9.2-capi-android-arm64.tar.gz
+# v0.9.4 换成你想用的 tag —— 当前有哪些见 releases 页面。
+curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.4/migo-0.9.4-capi-android-arm64.tar.gz
+tar xzf migo-0.9.4-capi-android-arm64.tar.gz
 ```
 
 包内 `README.md` 写明了 NDK 消费者必须传的两个 CMake flag;缺了它们构建会失败,

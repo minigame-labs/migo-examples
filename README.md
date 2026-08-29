@@ -77,9 +77,9 @@ The `android-java/` example uses the Java/Kotlin SDK. To embed Migo from native
 code instead, the same release publishes a C ABI package per ABI:
 
 ```bash
-# Replace v0.9.2 with the tag you want -- see the releases page for what's current.
-curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.2/migo-0.9.2-capi-android-arm64.tar.gz
-tar xzf migo-0.9.2-capi-android-arm64.tar.gz
+# Replace v0.9.4 with the tag you want -- see the releases page for what's current.
+curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.4/migo-0.9.4-capi-android-arm64.tar.gz
+tar xzf migo-0.9.4-capi-android-arm64.tar.gz
 ```
 
 Its `README.md` carries the two CMake flags an NDK consumer must pass; without
