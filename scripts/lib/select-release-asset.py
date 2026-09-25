@@ -10,6 +10,7 @@ structurally, in the trailing segments that kind is defined by:
   linux-sdk     ".tar.gz"  ending, structurally, in ["linux", <arch>]
   windows-sdk   ".tar.gz"  ending, structurally, in ["windows", <arch>]
   ohos-sdk      ".tar.gz"  ending, structurally, in ["ohos", <arch>]
+  apple-sdk     ".zip"     ending in ["apple", "sdk"] (one package for iOS and macOS)
 
 e.g. "migo-0.9.1-android.aar" and "migo-0.9.1-capi-linux-x86_64.tar.gz".
 
@@ -66,6 +67,7 @@ STRUCTURAL_KINDS = {
     "linux-sdk": lambda profile, arch: (".tar.gz", ["linux", arch]),
     "windows-sdk": lambda profile, arch: (".tar.gz", ["windows", arch]),
     "ohos-sdk": lambda profile, arch: (".tar.gz", ["ohos", arch]),
+    "apple-sdk": lambda profile, arch: (".zip", ["apple", "sdk"]),
 }
 KINDS = set(STRUCTURAL_KINDS)
 

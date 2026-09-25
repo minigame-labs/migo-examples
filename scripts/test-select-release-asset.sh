@@ -25,7 +25,9 @@ REALISTIC_RELEASE='{"assets":[
   {"name":"migo-0.9.3-capi-windows-x86_64.tar.gz","browser_download_url":"https://example/capi-windows-x86_64.tar.gz"},
   {"name":"migo-0.9.3-capi-windows-arm64.tar.gz","browser_download_url":"https://example/capi-windows-arm64.tar.gz"},
   {"name":"migo-0.9.3-capi-ohos-x86_64.tar.gz","browser_download_url":"https://example/capi-ohos-x86_64.tar.gz"},
-  {"name":"migo-0.9.3-capi-ohos-arm64.tar.gz","browser_download_url":"https://example/capi-ohos-arm64.tar.gz"}
+  {"name":"migo-0.9.3-capi-ohos-arm64.tar.gz","browser_download_url":"https://example/capi-ohos-arm64.tar.gz"},
+  {"name":"migo-0.9.3-apple-sdk.zip","browser_download_url":"https://example/apple-sdk.zip"},
+  {"name":"migo-0.9.3-apple-sdk.zip.attestation.json","browser_download_url":"https://example/apple-sdk.zip.attestation.json"}
 ]}'
 
 # 1. android-aar matches the one universal AAR structurally (ending in
@@ -128,4 +130,12 @@ STATUS=$?
 set -e
 [ "$STATUS" -eq 2 ] || fail "an unknown artifact kind must exit 2, got $STATUS"
 
-echo "OK: select-release-asset contract holds (8 checks)"
+# 9. apple-sdk is the one zip for iOS and macOS, whatever arch is passed, and
+#    never its attestation sidecar.
+for arch in x86_64 arm64; do
+  OUT="$(run_kind apple-sdk full "$arch" "$REALISTIC_RELEASE")" \
+    || fail "apple-sdk did not resolve against a realistic asset list"
+  [ "$OUT" = "https://example/apple-sdk.zip" ] || fail "apple-sdk resolved the wrong URL: $OUT"
+done
+
+echo "OK: select-release-asset contract holds (9 checks)"

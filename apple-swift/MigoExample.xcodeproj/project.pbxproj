@@ -1,0 +1,511 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0C60202CCCB24918506E0BE9 /* demo in Resources */ = {isa = PBXBuildFile; fileRef = EE79EFBA655A42616006839D /* demo */; };
+		0CBB4ED367E0E2A506528AEB /* demo in Resources */ = {isa = PBXBuildFile; fileRef = EE79EFBA655A42616006839D /* demo */; };
+		2B9D46730679CBE8113BF8BA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 368E9F58498CF3BD88990D5A /* AppDelegate.swift */; };
+		2C884EA57FD8725A774F9089 /* ExampleGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B0B25E5FB2F9A1853A12F35 /* ExampleGame.swift */; };
+		7315B99DF88E317B7D37BF65 /* MigoMacV8 in Frameworks */ = {isa = PBXBuildFile; productRef = FE17A647D1AF65D0F83A1816 /* MigoMacV8 */; };
+		A08A3814F35596A34BF630FE /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13A49E3C77B95451D923D58 /* main.swift */; };
+		DE6B1C321CE7344A5B6D9D0F /* MigoApplePerformancePlus in Frameworks */ = {isa = PBXBuildFile; productRef = 43AB6E12FD3F48E8F6C53BD3 /* MigoApplePerformancePlus */; };
+		DF2900F4AB4E4C5DB4AEADF5 /* ExampleGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B0B25E5FB2F9A1853A12F35 /* ExampleGame.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		02402958A7104C389113B091 /* MigoExample.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MigoExample.entitlements; sourceTree = "<group>"; };
+		0B0B25E5FB2F9A1853A12F35 /* ExampleGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleGame.swift; sourceTree = "<group>"; };
+		0F1A2CD15274C2650EA5278A /* MigoExample-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "MigoExample-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		20B45EBCFDD616A182F69825 /* MigoExample-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MigoExample-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		368E9F58498CF3BD88990D5A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		814719F6C76004421FA241DA /* sdk */ = {isa = PBXFileReference; lastKnownFileType = folder; name = sdk; path = sdk; sourceTree = SOURCE_ROOT; };
+		D13A49E3C77B95451D923D58 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		EE79EFBA655A42616006839D /* demo */ = {isa = PBXFileReference; lastKnownFileType = folder; name = demo; path = ../games/demo; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CB38C908D6419E0154328332 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7315B99DF88E317B7D37BF65 /* MigoMacV8 in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E107BA9840176003B4DE6B67 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DE6B1C321CE7344A5B6D9D0F /* MigoApplePerformancePlus in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2141387FE8A94B4FA0D83627 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				D13A49E3C77B95451D923D58 /* main.swift */,
+				02402958A7104C389113B091 /* MigoExample.entitlements */,
+			);
+			path = macOS;
+			sourceTree = "<group>";
+		};
+		305C9951DF373829DA14F2AF /* games */ = {
+			isa = PBXGroup;
+			children = (
+				EE79EFBA655A42616006839D /* demo */,
+			);
+			path = games;
+			sourceTree = "<group>";
+		};
+		339F421B0EF6102819FDB6F8 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				368E9F58498CF3BD88990D5A /* AppDelegate.swift */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		741BEB756E0CC3B45B5AC420 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				0B0B25E5FB2F9A1853A12F35 /* ExampleGame.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		9BF5A9FE176B00B26CB46B19 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0F1A2CD15274C2650EA5278A /* MigoExample-iOS.app */,
+				20B45EBCFDD616A182F69825 /* MigoExample-macOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A722160A9D46880CD6BFE4E9 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				814719F6C76004421FA241DA /* sdk */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		E54F2BA7C29BE0ECE78329B0 /* migo-examples-apple */ = {
+			isa = PBXGroup;
+			children = (
+				305C9951DF373829DA14F2AF /* games */,
+			);
+			name = "migo-examples-apple";
+			path = ..;
+			sourceTree = "<group>";
+		};
+		EB657CE86C506BAD8E3EDF97 = {
+			isa = PBXGroup;
+			children = (
+				339F421B0EF6102819FDB6F8 /* iOS */,
+				2141387FE8A94B4FA0D83627 /* macOS */,
+				E54F2BA7C29BE0ECE78329B0 /* migo-examples-apple */,
+				A722160A9D46880CD6BFE4E9 /* Packages */,
+				741BEB756E0CC3B45B5AC420 /* Shared */,
+				9BF5A9FE176B00B26CB46B19 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C03B1DD9E69A308527ECA6E4 /* MigoExample-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F550A09B26386B206CD24B27 /* Build configuration list for PBXNativeTarget "MigoExample-iOS" */;
+			buildPhases = (
+				30DC85B0AE2D1DBE1B31134D /* Sources */,
+				76759F78F98B28270BE382EE /* Resources */,
+				E107BA9840176003B4DE6B67 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "MigoExample-iOS";
+			packageProductDependencies = (
+				43AB6E12FD3F48E8F6C53BD3 /* MigoApplePerformancePlus */,
+			);
+			productName = "MigoExample-iOS";
+			productReference = 0F1A2CD15274C2650EA5278A /* MigoExample-iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		EBC850B8DD278DE5EBC59D71 /* MigoExample-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 457FB21343EC0641D60EC736 /* Build configuration list for PBXNativeTarget "MigoExample-macOS" */;
+			buildPhases = (
+				E2363118C74500A9BB4DEB1E /* Sources */,
+				3F027D338BDBE52A4C87C10B /* Resources */,
+				CB38C908D6419E0154328332 /* Frameworks */,
+				18D181D55519D220792524E6 /* Embed ANGLE */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "MigoExample-macOS";
+			packageProductDependencies = (
+				FE17A647D1AF65D0F83A1816 /* MigoMacV8 */,
+			);
+			productName = "MigoExample-macOS";
+			productReference = 20B45EBCFDD616A182F69825 /* MigoExample-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0A36A9A3A679CE21A3898549 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = AB3BF2BAC4CA0235C2971E09 /* Build configuration list for PBXProject "MigoExample" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = EB657CE86C506BAD8E3EDF97;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E44385804942CF9D88BAFE3A /* XCLocalSwiftPackageReference "sdk" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9BF5A9FE176B00B26CB46B19 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C03B1DD9E69A308527ECA6E4 /* MigoExample-iOS */,
+				EBC850B8DD278DE5EBC59D71 /* MigoExample-macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3F027D338BDBE52A4C87C10B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C60202CCCB24918506E0BE9 /* demo in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		76759F78F98B28270BE382EE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0CBB4ED367E0E2A506528AEB /* demo in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		18D181D55519D220792524E6 /* Embed ANGLE */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Embed ANGLE";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# The engine renders through ANGLE, which ships in the SDK as a pair of\n# dylibs. Copied next to the app's frameworks and signed with the app's\n# identity; Xcode signs the app itself after this phase.\nbash \"$SRCROOT/sdk/Frameworks/Scripts/embed-apple-angle.sh\" \\\n  --frameworks-dir \"$SRCROOT/sdk/Frameworks\" \\\n  --destination \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH\" \\\n  --architectures \"$ARCHS\" \\\n  ${EXPANDED_CODE_SIGN_IDENTITY:+--sign \"$EXPANDED_CODE_SIGN_IDENTITY\"}\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		30DC85B0AE2D1DBE1B31134D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B9D46730679CBE8113BF8BA /* AppDelegate.swift in Sources */,
+				2C884EA57FD8725A774F9089 /* ExampleGame.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E2363118C74500A9BB4DEB1E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF2900F4AB4E4C5DB4AEADF5 /* ExampleGame.swift in Sources */,
+				A08A3814F35596A34BF630FE /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0D49FB48EA96A0A48F57A8D9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = macOS/MigoExample.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.migo.macos;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		396F54DC085D65B17084A0EF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.migo.ios;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6EAC1268387BE772136DA528 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = MigoExample;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		798A4DA694EB997C7FA665D5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = macOS/MigoExample.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.migo.macos;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		BE266A52E6B4037BBB7A98B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.migo.ios;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D7F20077B3230DF342775E16 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = MigoExample;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		457FB21343EC0641D60EC736 /* Build configuration list for PBXNativeTarget "MigoExample-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0D49FB48EA96A0A48F57A8D9 /* Debug */,
+				798A4DA694EB997C7FA665D5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AB3BF2BAC4CA0235C2971E09 /* Build configuration list for PBXProject "MigoExample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D7F20077B3230DF342775E16 /* Debug */,
+				6EAC1268387BE772136DA528 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F550A09B26386B206CD24B27 /* Build configuration list for PBXNativeTarget "MigoExample-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE266A52E6B4037BBB7A98B9 /* Debug */,
+				396F54DC085D65B17084A0EF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		E44385804942CF9D88BAFE3A /* XCLocalSwiftPackageReference "sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = sdk;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		43AB6E12FD3F48E8F6C53BD3 /* MigoApplePerformancePlus */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MigoApplePerformancePlus;
+		};
+		FE17A647D1AF65D0F83A1816 /* MigoMacV8 */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MigoMacV8;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 0A36A9A3A679CE21A3898549 /* Project object */;
+}

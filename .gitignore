@@ -34,3 +34,5 @@ windows-cmake/build/
 openharmony/sdk-*/
 openharmony/entry/src/main/cpp/libs/
 openharmony/entry/src/main/cpp/migo-include/
+apple-swift/sdk
+apple-swift/build/
