@@ -30,8 +30,9 @@ case "$PLATFORM" in
   linux-sdk)   VERSION_FILE="$ROOT_DIR/migo-linux-version.txt" ;;
   windows-sdk) VERSION_FILE="$ROOT_DIR/migo-windows-version.txt" ;;
   ohos-sdk)    VERSION_FILE="$ROOT_DIR/migo-ohos-version.txt" ;;
+  apple-sdk)   VERSION_FILE="$ROOT_DIR/migo-apple-version.txt" ;;
   *)
-    echo "ERROR: unknown platform '$PLATFORM' (supported: android-aar, linux-sdk, windows-sdk, ohos-sdk)" >&2
+    echo "ERROR: unknown platform '$PLATFORM' (supported: android-aar, linux-sdk, windows-sdk, ohos-sdk, apple-sdk)" >&2
     exit 2
     ;;
 esac
@@ -43,6 +44,31 @@ esac
 ARCH="${MIGO_ARCH:-x86_64}"
 
 mkdir -p "$(dirname "$DEST")"
+
+# sha256sum is GNU coreutils; a Mac has shasum.
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
+if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "apple-sdk" ]; then
+  # The package is platforms/apple itself once build-apple-sdk.sh has assembled
+  # its engine; it is linked rather than copied, so a rebuild there is seen here.
+  SRC="$MIGO_LOCAL_REPO/platforms/apple"
+  if [ ! -f "$SRC/Frameworks/MigoEngine.xcframework/migo-build.json" ]; then
+    echo "ERROR: no assembled Apple SDK at $SRC" >&2
+    echo "       build it with: bash scripts/build-apple-sdk.sh --platform ios-simulator --product performance-plus" >&2
+    echo "                 and: bash scripts/build-apple-sdk.sh --platform macos --product macos-v8" >&2
+    exit 3
+  fi
+  rm -rf "$DEST"
+  ln -s "$(cd "$SRC" && pwd)" "$DEST"
+  echo "local:$(git -C "$MIGO_LOCAL_REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  exit 0
+fi
 
 if [ -n "${MIGO_LOCAL_REPO:-}" ] && [ "$PLATFORM" = "windows-sdk" ]; then
   SRC="$MIGO_LOCAL_REPO/dist/migo-windows-$ARCH"
@@ -176,7 +202,7 @@ if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL.attestation.json" -o "$TMP/attes
 fi
 
 ACTUAL_SIZE="$(wc -c < "$TMP/artifact.bin" | tr -d ' ')"
-ACTUAL_SHA256="$(sha256sum "$TMP/artifact.bin" | awk '{print $1}')"
+ACTUAL_SHA256="$(sha256_of "$TMP/artifact.bin")"
 if ! python3 "$ROOT_DIR/scripts/lib/verify-attestation.py" "$ASSET" "$ACTUAL_SIZE" "$ACTUAL_SHA256" \
      < "$TMP/attestation.json"; then
   rm -f "$TMP/artifact.bin"
@@ -190,6 +216,16 @@ if [ "$PLATFORM" = "linux-sdk" ] || [ "$PLATFORM" = "windows-sdk" ] || [ "$PLATF
   rm -rf "$DEST"
   mkdir -p "$DEST"
   tar xzf "$TMP/artifact.bin" -C "$DEST" --strip-components=1
+elif [ "$PLATFORM" = "apple-sdk" ]; then
+  # The zip holds one MigoApple/ directory, the Swift package; DEST becomes it.
+  # unzip keeps the symbolic links the framework bundles carry.
+  unzip -q "$TMP/artifact.bin" -d "$TMP/unpacked"
+  [ -f "$TMP/unpacked/MigoApple/Package.swift" ] || {
+    echo "ERROR: $ASSET has no MigoApple/Package.swift" >&2
+    exit 5
+  }
+  rm -rf "$DEST"
+  mv "$TMP/unpacked/MigoApple" "$DEST"
 else
   mv "$TMP/artifact.bin" "$DEST"
 fi

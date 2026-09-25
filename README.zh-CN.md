@@ -12,6 +12,7 @@
 | [`linux-cmake/`](linux-cmake/) | Linux,经 CMake 使用 C ABI |
 | [`windows-cmake/`](windows-cmake/) | Windows,经 CMake 使用 C ABI |
 | [`openharmony/`](openharmony/) | OpenHarmony,经 ArkUI XComponent 使用 C ABI |
+| [`apple-swift/`](apple-swift/) | iOS 与 macOS,经 `MigoGameView` 使用 Swift |
 
 游戏内容位于 [`games/`](games/),每个游戏一个目录。一个游戏目录包含
 `game.js`(入口文件)和 `game.json`。所有宿主示例按名称运行同一份内容。
@@ -26,6 +27,7 @@ Migo 各平台分开发布,因此每个平台钉在各自的 release 上:
 | `linux-sdk` | [`migo-linux-version.txt`](migo-linux-version.txt) |
 | `windows-sdk` | [`migo-windows-version.txt`](migo-windows-version.txt) |
 | `ohos-sdk` | [`migo-ohos-version.txt`](migo-ohos-version.txt) |
+| `apple-sdk` | [`migo-apple-version.txt`](migo-apple-version.txt) |
 
 ## 获取运行时
 
@@ -59,11 +61,13 @@ bash scripts/build-aar.sh debug --product-profile <profile>
 | `MIGO_ARCH` | 为 `linux-sdk`、`windows-sdk` 和 `ohos-sdk` 选择的架构(默认 `x86_64`);`android-aar` 忽略此变量。 |
 | `GITHUB_TOKEN` | 默认模式下,随 GitHub API/下载请求发送的 bearer token。 |
 
-平台取值为 `android-aar`、`linux-sdk`、`windows-sdk` 和 `ohos-sdk`。三个 SDK
+平台取值为 `android-aar`、`linux-sdk`、`windows-sdk`、`ohos-sdk` 和 `apple-sdk`。三个 SDK
 平台各自按架构发布一个 tarball,没有通用包,`MIGO_ARCH` 就是在其中做选择;
 `android-aar` 会忽略它,因为该 AAR 是多 ABI 的,由 Gradle 在设备上挑选对应的
 `.so`。目标路径按平台不同:`android-aar` 写出单个 `.aar` 文件,其余三个 SDK
-平台解包成一个供 `find_package(migo)` 读取的前缀目录。
+平台解包成一个供 `find_package(migo)` 读取的前缀目录。`apple-sdk` 是 iOS 与 macOS
+共用的一个 Swift 包:解包成 Xcode 工程作为本地包添加的目录;本地模式下,在
+`scripts/build-apple-sdk.sh` 组装好引擎后,直接链接到该检出的 `platforms/apple`。
 
 ## 不用 Gradle 的 Android 集成(NDK / C ABI)
 

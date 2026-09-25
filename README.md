@@ -13,6 +13,7 @@ Supported platforms:
 | [`linux-cmake/`](linux-cmake/) | Linux, C ABI through CMake |
 | [`windows-cmake/`](windows-cmake/) | Windows, C ABI through CMake |
 | [`openharmony/`](openharmony/) | OpenHarmony, C ABI through an ArkUI XComponent |
+| [`apple-swift/`](apple-swift/) | iOS and macOS, Swift through `MigoGameView` |
 
 Game content lives in [`games/`](games/), one directory per game. A game
 directory holds `game.js` (entry point) and `game.json`. Every host example
@@ -29,6 +30,7 @@ separately:
 | `linux-sdk` | [`migo-linux-version.txt`](migo-linux-version.txt) |
 | `windows-sdk` | [`migo-windows-version.txt`](migo-windows-version.txt) |
 | `ohos-sdk` | [`migo-ohos-version.txt`](migo-ohos-version.txt) |
+| `apple-sdk` | [`migo-apple-version.txt`](migo-apple-version.txt) |
 
 ## Getting the runtime
 
@@ -63,13 +65,17 @@ Environment variables read by `resolve-migo-artifact.sh`:
 | `MIGO_ARCH` | Architecture to resolve, for `linux-sdk`, `windows-sdk` and `ohos-sdk` (default `x86_64`); ignored by `android-aar`. |
 | `GITHUB_TOKEN` | Bearer token sent on GitHub API/download requests in default mode. |
 
-Platform values are `android-aar`, `linux-sdk`, `windows-sdk` and `ohos-sdk`.
+Platform values are `android-aar`, `linux-sdk`, `windows-sdk`, `ohos-sdk` and
+`apple-sdk`.
 The three SDK kinds each ship one tarball per architecture rather than a
 universal package, which is what `MIGO_ARCH` selects between; `android-aar`
 ignores it, since the AAR is multi-ABI and Gradle picks the right `.so` per
 device. The destination differs by platform: `android-aar` writes a single
 `.aar` file, while the three SDK kinds unpack into a prefix directory that
-`find_package(migo)` reads.
+`find_package(migo)` reads. `apple-sdk` is one Swift package for iOS and macOS:
+it unpacks to the package directory an Xcode project adds as a local package,
+and in local mode links `platforms/apple` of the checkout once
+`scripts/build-apple-sdk.sh` has assembled its engine.
 
 ## Android without Gradle (NDK / C ABI)
 
