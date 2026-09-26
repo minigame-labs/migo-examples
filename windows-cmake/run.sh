@@ -20,10 +20,8 @@ esac
 GAME_ID="$(basename "$GAME_DIR")"
 [[ -f "$GAME_DIR/game.js" ]] || { echo "ERROR: no game at $GAME_DIR (expected game.js)" >&2; exit 2; }
 
-if [[ ! -f "$PREFIX/lib/cmake/migo/migo-config.cmake" ]]; then
-  echo "==> resolving the Migo Windows SDK"
-  bash "$ROOT/scripts/resolve-migo-artifact.sh" windows-sdk "$PREFIX"
-fi
+echo "==> resolving the Migo Windows SDK"
+bash "$ROOT/scripts/resolve-migo-artifact.sh" --if-stale windows-sdk "$PREFIX"
 
 # Build and run on a Windows local disk. cargo and cl are both unusable with a
 # UNC working directory, and the executable needs its DLLs on a real path.

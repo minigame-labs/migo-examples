@@ -94,4 +94,51 @@ fi
 [ -f "$BIG_DEST" ] \
   && fail "local mode left a file at the destination after the copy failed partway through"
 
-echo "OK: resolver contract holds (6 checks)"
+# 7. --if-stale keeps an SDK directory only while it records the release the
+#    pin names now. The run scripts used to resolve only when the directory was
+#    missing, so a pin change went on building against the old SDK. Both halves
+#    run offline: the pin is pointed at a tag that does not exist, so keeping
+#    must succeed without a request and re-resolving must reach the download
+#    and fail there (exit 4).
+OHOS_PIN_FILE="$ROOT_DIR/migo-ohos-version.txt"
+OHOS_PIN="$(cat "$OHOS_PIN_FILE")"
+restore_ohos_pin() { printf '%s\n' "$OHOS_PIN" > "$OHOS_PIN_FILE"; }
+trap restore_ohos_pin EXIT
+printf '%s\n' "tag-that-does-not-exist-contract-check" > "$OHOS_PIN_FILE"
+
+SDK_DIR="$WORK/sdk-x86_64"
+mkdir -p "$SDK_DIR/lib"
+echo "resolved-bytes" > "$SDK_DIR/lib/libmigo_capi.a"
+printf '%s\n' "ohos-sdk tag-that-does-not-exist-contract-check full x86_64" > "$SDK_DIR/.migo-resolved"
+KEPT="$(bash "$RESOLVER" --if-stale ohos-sdk "$SDK_DIR" 2>&1)" \
+  || fail "--if-stale re-resolved an SDK that records the current pin: $KEPT"
+grep -q "resolved-bytes" "$SDK_DIR/lib/libmigo_capi.a" \
+  || fail "--if-stale touched an SDK that records the current pin"
+
+printf '%s\n' "ohos-sdk v0.0.1-older-pin full x86_64" > "$SDK_DIR/.migo-resolved"
+set +e
+OUT="$(bash "$RESOLVER" --if-stale ohos-sdk "$SDK_DIR" 2>&1)"
+STATUS=$?
+set -e
+[ "$STATUS" -eq 4 ] \
+  || fail "--if-stale kept an SDK resolved from another tag (exit $STATUS): $OUT"
+
+printf '%s\n' "ohos-sdk tag-that-does-not-exist-contract-check full aarch64" > "$SDK_DIR/.migo-resolved"
+set +e
+OUT="$(bash "$RESOLVER" --if-stale ohos-sdk "$SDK_DIR" 2>&1)"
+STATUS=$?
+set -e
+[ "$STATUS" -eq 4 ] \
+  || fail "--if-stale kept an SDK resolved for another architecture (exit $STATUS): $OUT"
+
+rm -f "$SDK_DIR/.migo-resolved"
+set +e
+OUT="$(bash "$RESOLVER" --if-stale ohos-sdk "$SDK_DIR" 2>&1)"
+STATUS=$?
+set -e
+[ "$STATUS" -eq 4 ] \
+  || fail "--if-stale kept an SDK with no record of what it was resolved from (exit $STATUS): $OUT"
+restore_ohos_pin
+trap - EXIT
+
+echo "OK: resolver contract holds (7 checks)"

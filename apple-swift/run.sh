@@ -21,10 +21,8 @@ DERIVED="$HERE/build"
 
 # The resolver verifies the download against the release attestation; it is
 # not a plain fetch.
-if [ ! -f "$HERE/sdk/Package.swift" ]; then
-  echo "==> resolving the Migo Apple SDK"
-  bash "$ROOT/scripts/resolve-migo-artifact.sh" apple-sdk "$HERE/sdk"
-fi
+echo "==> resolving the Migo Apple SDK"
+bash "$ROOT/scripts/resolve-migo-artifact.sh" --if-stale apple-sdk "$HERE/sdk"
 
 build() {
   echo "==> building $1 for $2"
