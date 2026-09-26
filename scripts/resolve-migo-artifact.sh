@@ -14,8 +14,18 @@
 # limits); it is optional otherwise.
 set -euo pipefail
 
-PLATFORM="${1:?usage: resolve-migo-artifact.sh <platform> <dest>}"
-DEST="${2:?usage: resolve-migo-artifact.sh <platform> <dest>}"
+# --if-stale: keep a previously resolved SDK directory when it was resolved
+# from exactly the release the pin names now, and re-resolve otherwise. The run
+# scripts use it instead of "resolve only if the directory is missing", which
+# kept serving the old SDK after a pin change: migo-ohos-version.txt moved
+# v0.9.4 -> v0.9.7 and openharmony/run.sh went on building against v0.9.4.
+IF_STALE=0
+if [ "${1:-}" = "--if-stale" ]; then
+  IF_STALE=1
+  shift
+fi
+PLATFORM="${1:?usage: resolve-migo-artifact.sh [--if-stale] <platform> <dest>}"
+DEST="${2:?usage: resolve-migo-artifact.sh [--if-stale] <platform> <dest>}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROFILE="${MIGO_PROFILE:-full}"
@@ -153,6 +163,18 @@ if [ -z "$TAG" ]; then
   exit 3
 fi
 
+# What a resolved SDK directory was resolved from. Written into the directory
+# as the last step of a successful resolve, so an interrupted unpack leaves no
+# record and is never mistaken for a current one. The AAR is a single file with
+# no directory to carry it, so android-aar always resolves.
+IDENTITY="$PLATFORM $TAG $PROFILE $ARCH"
+RECORD="$DEST/.migo-resolved"
+if [ "$IF_STALE" = 1 ] && [ "$PLATFORM" != "android-aar" ] && [ -f "$RECORD" ] \
+   && [ "$(cat "$RECORD")" = "$IDENTITY" ]; then
+  echo "$TAG"
+  exit 0
+fi
+
 # The temp dir must live next to DEST, not in the system default (/tmp): if
 # they are different filesystems, the final `mv` below degrades from an
 # atomic rename into copy-then-unlink, reintroducing the partial-file window
@@ -216,6 +238,7 @@ if [ "$PLATFORM" = "linux-sdk" ] || [ "$PLATFORM" = "windows-sdk" ] || [ "$PLATF
   rm -rf "$DEST"
   mkdir -p "$DEST"
   tar xzf "$TMP/artifact.bin" -C "$DEST" --strip-components=1
+  printf '%s\n' "$IDENTITY" > "$RECORD"
 elif [ "$PLATFORM" = "apple-sdk" ]; then
   # The zip holds one MigoApple/ directory, the Swift package; DEST becomes it.
   # unzip keeps the symbolic links the framework bundles carry.
@@ -226,6 +249,7 @@ elif [ "$PLATFORM" = "apple-sdk" ]; then
   }
   rm -rf "$DEST"
   mv "$TMP/unpacked/MigoApple" "$DEST"
+  printf '%s\n' "$IDENTITY" > "$RECORD"
 else
   mv "$TMP/artifact.bin" "$DEST"
 fi

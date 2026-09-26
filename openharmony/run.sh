@@ -45,10 +45,8 @@ if [ "$ARCH" = "aarch64" ]; then
 fi
 
 SDK="$HERE/sdk-$ARCH"
-if [ ! -f "$SDK/lib/libmigo_capi.a" ]; then
-  info "resolving the Migo OpenHarmony SDK ($ARCH)"
-  MIGO_ARCH="$MIGO_ARCH" bash "$ROOT/scripts/resolve-migo-artifact.sh" ohos-sdk "$SDK"
-fi
+info "resolving the Migo OpenHarmony SDK ($ARCH)"
+MIGO_ARCH="$MIGO_ARCH" bash "$ROOT/scripts/resolve-migo-artifact.sh" --if-stale ohos-sdk "$SDK"
 
 # Staged where CMakeLists.txt expects them -- same layout the SDK/engine
 # repo's own build-ohos-host.sh produces, so nothing here is example-specific.
