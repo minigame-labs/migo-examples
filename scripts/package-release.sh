@@ -29,8 +29,10 @@ fi
 VERSION="${TAG#v}"
 
 PINS=(migo-version.txt migo-linux-version.txt migo-windows-version.txt migo-ohos-version.txt migo-apple-version.txt)
+# Read from the commit being archived, not the working tree: a pin edited and
+# not committed would pass here and ship the old one.
 for pin in "${PINS[@]}"; do
-  pinned="$(tr -d '[:space:]' < "$pin")"
+  pinned="$(git show "HEAD:$pin" | tr -d '[:space:]')"
   if [ "$pinned" != "$TAG" ]; then
     echo "$pin pins $pinned, not $TAG: pin every platform to the release before tagging it" >&2
     exit 1
