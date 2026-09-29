@@ -1,0 +1,37 @@
+name: release
+
+# A tag vX.Y.Z publishes each host example as a self-contained zip, for the
+# download page and its mainland mirror. The tag is the runtime release the
+# examples are pinned to; scripts/package-release.sh refuses a tag the pin files
+# do not name.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package the examples
+        run: bash scripts/package-release.sh "$GITHUB_REF_NAME" dist
+
+      # Build provenance for each zip, verifiable with
+      # `gh attestation verify <zip> -R minigame-labs/migo-examples`.
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: 'dist/migo-examples-*.zip'
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/migo-examples-*.zip dist/SHA256SUMS.txt \
+            --title "migo-examples $GITHUB_REF_NAME" \
+            --notes "Host examples pinned to Migo $GITHUB_REF_NAME, one self-contained zip per platform: the host directory, the games it loads, and the scripts that resolve and verify the runtime release. Unpack and follow the README; checksums are in SHA256SUMS.txt, and each zip's build provenance verifies with \`gh attestation verify <zip> -R minigame-labs/migo-examples\`."
