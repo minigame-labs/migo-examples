@@ -32,6 +32,17 @@ separately:
 | `ohos-sdk` | [`migo-ohos-version.txt`](migo-ohos-version.txt) |
 | `apple-sdk` | [`migo-apple-version.txt`](migo-apple-version.txt) |
 
+## Downloads
+
+Every release tag `vX.Y.Z` -- the runtime release the pins name -- publishes one
+self-contained zip per host directory on
+[Releases](https://github.com/minigame-labs/migo-examples/releases) and on the
+[download page](https://minigame-labs.com/download.html) (with a mainland
+mirror): the directory, the games it loads, and the scripts below. Checksums are
+in `SHA256SUMS.txt`, and each zip's build provenance verifies with
+`gh attestation verify <zip> -R minigame-labs/migo-examples`.
+`scripts/package-release.sh` builds them, and CI runs it on every change.
+
 ## Getting the runtime
 
 ```bash

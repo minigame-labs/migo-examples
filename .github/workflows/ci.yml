@@ -25,6 +25,11 @@ jobs:
       - name: Attestation verification contract
         run: bash scripts/test-verify-attestation.sh
 
+      # What a release tag publishes, packaged on every change so a release is
+      # never the first time it runs.
+      - name: Release packaging
+        run: bash scripts/package-release.sh "$(tr -d '[:space:]' < migo-version.txt)" "$RUNNER_TEMP/release"
+
       - name: Resolve runtime
         id: resolve
         run: |

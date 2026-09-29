@@ -29,6 +29,15 @@ Migo 各平台分开发布,因此每个平台钉在各自的 release 上:
 | `ohos-sdk` | [`migo-ohos-version.txt`](migo-ohos-version.txt) |
 | `apple-sdk` | [`migo-apple-version.txt`](migo-apple-version.txt) |
 
+## 下载
+
+每个发布 tag `vX.Y.Z`（即钉版本文件所指的运行时版本）都会在
+[Releases](https://github.com/minigame-labs/migo-examples/releases) 和
+[下载页](https://minigame-labs.com/download.html)（有国内镜像）发布每个宿主目录各一个自包含 zip：
+该目录、它加载的游戏，以及下文的脚本。校验和在 `SHA256SUMS.txt`，每个 zip 的构建来源可用
+`gh attestation verify <zip> -R minigame-labs/migo-examples` 验证。打包由
+`scripts/package-release.sh` 完成，CI 在每次改动时都会跑一遍。
+
 ## 获取运行时
 
 ```bash
