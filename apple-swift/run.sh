@@ -17,12 +17,21 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 PLATFORM="${1:?usage: run.sh <macos|ios-simulator> [SECONDS]}"
 SECONDS_TO_RUN="${2:-}"
-DERIVED="$HERE/build"
 
 # The resolver verifies the download against the release attestation; it is
-# not a plain fetch.
+# not a plain fetch. It prints what it resolved: the release tag, or local:<sha>.
 echo "==> resolving the Migo Apple SDK"
-bash "$ROOT/scripts/resolve-migo-artifact.sh" --if-stale apple-sdk "$HERE/sdk"
+SDK_ID="$(bash "$ROOT/scripts/resolve-migo-artifact.sh" --if-stale apple-sdk "$HERE/sdk" | tail -n 1)"
+echo "    $SDK_ID"
+
+# One derived-data directory per resolved SDK. Xcode keeps the SDK's precompiled
+# modules in it and, when the SDK is swapped under them, refuses every build with
+# "file .../ios.h has been modified since the module file ... was built" until the
+# directory is deleted by hand -- what a bumped migo-apple-version.txt used to do
+# to this script. The other directories are stale caches and go.
+DERIVED="$HERE/build/${SDK_ID//[^A-Za-z0-9._-]/_}"
+mkdir -p "$HERE/build"
+find "$HERE/build" -mindepth 1 -maxdepth 1 ! -name "$(basename "$DERIVED")" -exec rm -rf {} +
 
 build() {
   echo "==> building $1 for $2"
