@@ -51,8 +51,12 @@ enum ExampleGame {
                 report("error \(code) recoverable=\(recoverable): \(message)")
             case .gameLog(let entry):
                 report("game log: \(entry)")
-            default:
+            #if os(iOS)
+            // Only the iOS view has these (WebKit's content process restarting, the
+            // game's console); the example has nothing to do for either.
+            case .restarted, .console:
                 break
+            #endif
             }
         }
         if let reason = MigoGameView.unavailabilityReason {
