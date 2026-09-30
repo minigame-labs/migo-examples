@@ -3,6 +3,7 @@ import MigoApplePerformancePlus
 #else
 import MigoMacV8
 #endif
+import CryptoKit
 import Foundation
 
 /// The game this example ships and how either app runs it. iOS and macOS use
@@ -15,18 +16,33 @@ enum ExampleGame {
     /// Installs the bundled game and returns a view ready to run it.
     ///
     /// The package is part of this signed app, so it is installed `.unsigned`;
-    /// downloaded packages would use `.verified(publicKey:)`. Passing the build
-    /// number as the version makes relaunches free: the same version is not
-    /// copied again.
+    /// downloaded packages would use `.verified(publicKey:)`. The version is a
+    /// digest of the package, so relaunches are free -- the same version is not
+    /// copied again -- and editing `games/demo` takes effect on the next run.
+    /// (The build number would not: it stays the same while the game changes, and
+    /// the installer would go on running the game it already has.)
     static func makeView() throws -> MigoGameView {
         guard let package = Bundle.main.url(forResource: id, withExtension: nil) else {
             throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: "\(id) in the app bundle"])
         }
         let configuration = try MigoGameView.Configuration.standard(contentSigning: .unsigned)
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
         try MigoGameInstaller.install(
-            package: package, id: id, version: version, into: configuration.directories)
+            package: package, id: id, version: try digest(of: package), into: configuration.directories)
         return MigoGameView(configuration: configuration)
+    }
+
+    /// SHA-256 over every file's path (relative to the package) and bytes, in path order.
+    private static func digest(of package: URL) throws -> String {
+        var hash = SHA256()
+        let files = (FileManager.default.enumerator(at: package, includingPropertiesForKeys: [.isRegularFileKey])?
+            .compactMap { $0 as? URL } ?? [])
+            .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
+            .sorted { $0.path < $1.path }
+        for file in files {
+            hash.update(data: Data(file.path.dropFirst(package.path.count).utf8))
+            hash.update(data: try Data(contentsOf: file))
+        }
+        return hash.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
     /// Reports the view's events on standard output and starts the game.
