@@ -182,6 +182,9 @@ fi
 TMP="$(mktemp -d "$(dirname "$DEST")/.migo-resolve.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
+# Expanded as ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"}: macOS ships bash 3.2, where under
+# `set -u` a plain "${AUTH_HEADER[@]}" of an empty array is an "unbound variable" error --
+# and inside `if !` that error made this script exit 0 without downloading anything.
 AUTH_HEADER=()
 if [ -n "${GITHUB_TOKEN:-}" ]; then
   AUTH_HEADER=(-H "Authorization: Bearer $GITHUB_TOKEN")
@@ -189,7 +192,7 @@ fi
 
 RELEASE_JSON="$TMP/release.json"
 RELEASE_API="https://api.github.com/repos/$REPO/releases/tags/$TAG"
-if ! curl -fsSL "${AUTH_HEADER[@]}" "$RELEASE_API" -o "$RELEASE_JSON"; then
+if ! curl -fsSL ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} "$RELEASE_API" -o "$RELEASE_JSON"; then
   echo "ERROR: could not download the release metadata for tag '$TAG' of $REPO" >&2
   echo "       (GET $RELEASE_API)." >&2
   echo "       The tag comes from migo-version.txt; check that the release exists." >&2
@@ -208,7 +211,7 @@ if ! ASSET_URL="$(python3 "$ROOT_DIR/scripts/lib/select-release-asset.py" "$PLAT
 fi
 ASSET="$(basename "$ASSET_URL")"
 
-if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL" -o "$TMP/artifact.bin"; then
+if ! curl -fsSL ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} "$ASSET_URL" -o "$TMP/artifact.bin"; then
   echo "ERROR: could not download $ASSET from release '$TAG' of $REPO." >&2
   exit 4
 fi
@@ -218,7 +221,7 @@ fi
 # unrelated. Migo's release pipeline (build-aar.sh) publishes an attestation
 # beside each AAR (<asset>.attestation.json) -- not a bare <asset>.sha256 --
 # so that is what's fetched and checked here.
-if ! curl -fsSL "${AUTH_HEADER[@]}" "$ASSET_URL.attestation.json" -o "$TMP/attestation.json"; then
+if ! curl -fsSL ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} "$ASSET_URL.attestation.json" -o "$TMP/attestation.json"; then
   echo "ERROR: release '$TAG' publishes $ASSET but no $ASSET.attestation.json" >&2
   exit 4
 fi

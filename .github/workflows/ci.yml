@@ -6,6 +6,20 @@ on:
   pull_request:
 
 jobs:
+  # macOS ships bash 3.2; the contracts above the Android build must hold there too.
+  # (A resolver that died on an empty array under `set -u` passed on ubuntu's bash 5 and
+  # fell silently through, without downloading anything, on a stranger's Mac.)
+  contracts-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolver contract, bash 3.2
+        run: /bin/bash scripts/test-resolve-migo-artifact.sh
+      - name: Release asset selection contract, bash 3.2
+        run: /bin/bash scripts/test-select-release-asset.sh
+      - name: Attestation verification contract, bash 3.2
+        run: /bin/bash scripts/test-verify-attestation.sh
+
   build:
     runs-on: ubuntu-latest
     steps:
