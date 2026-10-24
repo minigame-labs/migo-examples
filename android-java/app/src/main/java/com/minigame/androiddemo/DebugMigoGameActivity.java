@@ -39,6 +39,25 @@ public class DebugMigoGameActivity extends MigoGameActivity {
         context.startActivity(intent);
     }
 
+    /**
+     * How this example runs a game: the configuration {@link MainActivity} hands over, less any
+     * adapter. A launch that carries none, from adb, runs on it too, instead of on the SDK's
+     * default, which refuses an unsigned package.
+     */
+    protected RuntimeConfig.Builder exampleConfig() {
+        RuntimeConfig.Builder builder = new RuntimeConfig.Builder(this)
+                .setDebugEnabled(true)
+                .setCodeSigningEnabled(false);
+        RuntimeConfigCompat.injectFromGameConfig(builder,
+                GameConfigLoader.load(this, getIntent().getStringExtra(EXTRA_GAME_ID)));
+        return builder;
+    }
+
+    @Override
+    protected RuntimeConfig onCreateRuntimeConfig() {
+        return exampleConfig().build();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -108,12 +127,6 @@ public class DebugMigoGameActivity extends MigoGameActivity {
             @Override
             public void onGameReady() {
                 Log.i(TAG, "listener.onGameReady");
-                // Enable performance profiling after game is loaded.
-                // View with: adb logcat | grep "\[MigoPerf\]"
-                GameSession s = getGameSession();
-                if (s != null) {
-                    s.evaluateJavaScript("_perf.enable()");
-                }
             }
 
             @Override

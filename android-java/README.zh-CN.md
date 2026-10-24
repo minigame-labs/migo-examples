@@ -76,3 +76,10 @@ bash scripts/push-game.sh wx-adapter-demo
 ```bash
 ./gradlew :snippets:assembleDebug
 ```
+
+## Prescreen
+
+debug 构建带有 `PrescreenProbeActivity`，这是 adb 唯一能启动的游戏 activity，供引擎仓库的 `scripts/prescreen-run.sh`
+使用（见其 [PRESCREEN.md](https://github.com/minigame-labs/migo/blob/master/PRESCREEN.md)）。它按
+`DebugMigoGameActivity` 的方式运行游戏，另外只注入脚本交给它的东西：适配器（`--adapter`）和兼容记录器（`--record`），
+每注入一个都会把它的 sha256 写进日志。它放在 `app/src/debug/` 下，release 构建里没有它。
