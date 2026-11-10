@@ -33,4 +33,8 @@ android {
 
 dependencies {
     implementation(files("../libs/migo.aar"))
+    // A file AAR brings none of the libraries migo uses: Kotlin's standard library (its TLS
+    // verifier) and ZXing (scanCode's decoder), at the versions its release lists.
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.zxing.core)
 }
