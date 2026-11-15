@@ -84,9 +84,8 @@ integration, without either wrapper class, live in
 
 ## Prescreen
 
-The debug build carries `PrescreenProbeActivity`, the one game activity adb may start, for the engine
-repository's `scripts/prescreen-run.sh` (see its
-[PRESCREEN.md](https://github.com/minigame-labs/migo/blob/master/PRESCREEN.md)). It runs a game the
+The debug build carries `PrescreenProbeActivity`, the one game activity adb may start, for the prescreen
+tool Migo runs on a game package before integration (`prescreen-run.sh`). It runs a game the
 way `DebugMigoGameActivity` does, plus what the script hands it: an adapter (`--adapter`) and the
 compatibility recorder (`--record`), each logged with its sha256 when injected. It is in
 `app/src/debug/`, so a release build does not have it.

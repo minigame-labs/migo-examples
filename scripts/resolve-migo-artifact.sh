@@ -29,7 +29,7 @@ DEST="${2:?usage: resolve-migo-artifact.sh [--if-stale] <platform> <dest>}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROFILE="${MIGO_PROFILE:-full}"
-REPO="minigame-labs/migo"
+REPO="minigame-labs/migo-runtime"
 
 # Each platform names the version file holding its release tag. They are
 # separate because the platforms release independently: the Android runtime and
