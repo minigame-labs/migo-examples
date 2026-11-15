@@ -2,7 +2,7 @@
 
 # Migo Examples
 
-Host integration examples for [Migo](https://github.com/minigame-labs/migo), a native
+Host integration examples for [Migo](https://github.com/minigame-labs/migo-runtime), a native
 HTML5 / mini-game runtime.
 
 Supported platforms:
@@ -95,7 +95,7 @@ code instead, the same release publishes a C ABI package per ABI:
 
 ```bash
 # Replace v0.9.19 with the tag you want -- see the releases page for what's current.
-curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.19/migo-0.9.19-capi-android-arm64.tar.gz
+curl -fsSLO https://github.com/minigame-labs/migo-runtime/releases/download/v0.9.19/migo-0.9.19-capi-android-arm64.tar.gz
 tar xzf migo-0.9.19-capi-android-arm64.tar.gz
 ```
 

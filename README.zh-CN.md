@@ -2,7 +2,7 @@
 
 # Migo Examples
 
-[Migo](https://github.com/minigame-labs/migo)(原生 HTML5 / 小游戏运行时)的宿主集成示例仓库。
+[Migo](https://github.com/minigame-labs/migo-runtime)(原生 HTML5 / 小游戏运行时)的宿主集成示例仓库。
 
 已支持的平台:
 
@@ -85,7 +85,7 @@ release 按 ABI 发布了 C ABI 包:
 
 ```bash
 # v0.9.19 换成你想用的 tag —— 当前有哪些见 releases 页面。
-curl -fsSLO https://github.com/minigame-labs/migo/releases/download/v0.9.19/migo-0.9.19-capi-android-arm64.tar.gz
+curl -fsSLO https://github.com/minigame-labs/migo-runtime/releases/download/v0.9.19/migo-0.9.19-capi-android-arm64.tar.gz
 tar xzf migo-0.9.19-capi-android-arm64.tar.gz
 ```
 
