@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 import com.migo.runtime.MigoRuntime;
+import com.migo.runtime.MigoRuntime;
 import com.migo.runtime.RuntimeConfig;
 
 /**
@@ -119,6 +120,14 @@ public class MainActivity extends Activity {
             launchGameById(requestedGame.trim(), entry == null || entry.trim().isEmpty()
                     ? GAME_ENTRY : entry.trim());
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // A game is likely to be opened from here: start the game process and load the engine now,
+        // so the tap does not pay for either.
+        MigoRuntime.prewarmGameProcess(this);
     }
 
     /** Open a game by its slot id, bypassing the menu. See the headless entry above. */
