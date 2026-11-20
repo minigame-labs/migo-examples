@@ -41,10 +41,15 @@
             android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden" />
 
-        <!-- Debug wrapper for MigoGameActivity with key-path logs -->
+        <!-- Debug wrapper for MigoGameActivity with key-path logs. It runs where MigoGameActivity
+             does by default: in a process of its own (:migo), so a crash in the game ends that
+             process and not this app, and in a task of its own, in Recents while it runs. -->
         <activity
             android:name=".DebugMigoGameActivity"
             android:exported="false"
+            android:process=":migo"
+            android:taskAffinity="${applicationId}.migo"
+            android:autoRemoveFromRecents="true"
             android:configChanges="orientation|screenSize|keyboardHidden" />
     </application>
 
